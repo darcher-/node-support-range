@@ -34,7 +34,7 @@
       ]
     }
   },
-  "publisher": "UNSET_PUBLISHER_TOKEN",
+  "publisher": "darcher-",
   "dependencies": {
     "semver": "7.7.1"
   },
