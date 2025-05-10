@@ -1,0 +1,96 @@
+{
+  "activationEvents": [
+    "onLanguage:json",
+    "onLanguage:jsonc",
+    "onCommand:node-support-limits.analyzeDependencies",
+    "workspaceContains:package.json"
+  ],
+  "categories": [
+    "Linters",
+    "Programming Languages",
+    "Other"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "category": "NodeSupportLimits",
+        "command": "node-support-limits.analyzeDependencies",
+        "title": "Analyze Node/NPM Support Limits"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "node-support-limits.analyzeDependencies",
+          "when": "resourceLangId == json || resourceLangId == jsonc"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "node-support-limits.analyzeDependencies",
+          "group": "navigation@5",
+          "when": "explorerResourceIsFolder"
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "semver": "7.7.1"
+  },
+  "description": "Analyzes project dependencies to determine and suggest NodeJS/NPM version support for the project's `package:engines` entries.",
+  "devDependencies": {
+    "@eslint/js": "9.26.0",
+    "@swc/cli": "0.7.5",
+    "@swc/core": "1.11.24",
+    "@types/node": "22.15.17",
+    "@types/semver": "7.7.0",
+    "@types/vscode": "1.100.0",
+    "eslint": "9.26.0",
+    "eslint-config-prettier": "10.1.5",
+    "eslint-plugin-jsdoc": "50.6.11",
+    "eslint-plugin-typescript-enum": "2.1.0",
+    "eslint-plugin-unused-imports": "4.1.4",
+    "glob": "11.0.2",
+    "globals": "16.1.0",
+    "prettier": "3.5.3"
+  },
+  "displayName": "Node Support Limits",
+  "engines": {
+    "node": ">=18.20.8 <=24.0.1",
+    "npm": ">=10.8.2 <=11.3.0",
+    "vscode": "*"
+  },
+  "main": "dist/extension.js",
+  "name": "node-support-limits",
+  "optionalDependencies": {
+    "npm-run-all": "4.1.5",
+    "rimraf": "6.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/node-support-limits.git"
+  },
+  "packageManager": "npm@11.3.0",
+  "peerDependencies": {
+    "@swc/core": "1.7.0",
+    "typescript": "5.8.3"
+  },
+  "scripts": {
+    "package": "vsce package",
+    "compile": "tsc --project . --pretty",
+    "format": "npm run formatter --write",
+    "format:check": "npm run formatter --check",
+    "formatter": "prettier src",
+    "lint": "npm run linter",
+    "lint:check": "npm run linter --dry-run",
+    "linter": "eslint src --ext=js --config=.eslintrc.js",
+    "postinstall": "npm outdated",
+    "postpack": "npm find-dupes",
+    "preinstall": "npm up --ignore-scripts",
+    "prepack": "npm prune --ignore-scripts",
+    "prepare": "npm ci --ignore-scripts",
+    "vscode:prepublish": "npm run compile"
+  },
+  "type": "module",
+  "version": "1.0.0"
+}
