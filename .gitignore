@@ -1,9 +1,5 @@
-# files
-npm-debug.log* # debug logs
-package-lock.json # lockfile
-tsconfig.tsbuildinfo # dist info
-
-# folders
-.vscode-test/ # extension tests
-dist/ # distributed
-node_modules/ # dependencies
+.vscode-test
+dist
+node_modules
+npm-debug.log*
+tsconfig.tsbuildinfo
