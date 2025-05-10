@@ -34,9 +34,15 @@
       ]
     }
   },
+  "publisher": "UNSET_PUBLISHER_TOKEN",
   "dependencies": {
     "semver": "7.7.1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darcher-/node-support-range.git"
+  },
+  "publisher": "darcher-",
   "description": "Analyzes project dependencies to determine and suggest NodeJS/NPM version support for the project's `package:engines` entries.",
   "devDependencies": {
     "@eslint/js": "9.26.0",
