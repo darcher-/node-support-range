@@ -34,15 +34,9 @@
       ]
     }
   },
-  "publisher": "darcher-",
   "dependencies": {
     "semver": "7.7.1"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/darcher-/node-support-range.git"
-  },
-  "publisher": "darcher-",
   "description": "Analyzes project dependencies to determine and suggest NodeJS/NPM version support for the project's `package:engines` entries.",
   "devDependencies": {
     "@eslint/js": "9.26.0",
@@ -51,6 +45,7 @@
     "@types/node": "22.15.17",
     "@types/semver": "7.7.0",
     "@types/vscode": "1.100.0",
+    "conventional-changelog-cli": "5.0.0",
     "eslint": "9.26.0",
     "eslint-config-prettier": "10.1.5",
     "eslint-plugin-jsdoc": "50.6.11",
@@ -77,8 +72,12 @@
     "@swc/core": "1.7.0",
     "typescript": "5.8.3"
   },
+  "publisher": "darcher-",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darcher-/node-support-range.git"
+  },
   "scripts": {
-    "package": "vsce package",
     "compile": "tsc --project . --pretty",
     "format": "npm run formatter --write",
     "format:check": "npm run formatter --check",
@@ -86,11 +85,13 @@
     "lint": "npm run linter",
     "lint:check": "npm run linter --dry-run",
     "linter": "eslint src --ext=js --config=.eslintrc.js",
+    "package": "vsce package",
     "postinstall": "npm outdated",
     "postpack": "npm find-dupes",
     "preinstall": "npm up --ignore-scripts",
     "prepack": "npm prune --ignore-scripts",
     "prepare": "npm ci --ignore-scripts",
+    "update:changelog": "conventional-changelog",
     "vscode:prepublish": "npm run compile"
   },
   "type": "module",
