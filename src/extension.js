@@ -1,5 +1,3 @@
-import { statSync } from "fs"
-import { basename } from "path"
 import {
 	commands,
 	Hover,
@@ -9,63 +7,46 @@ import {
 	window,
 	workspace,
 } from "vscode"
-import { analyzeProjectIncludes } from "./utils/analyzeProjectIncludes.js"
-import { updateVersionRanges } from "./utils/updateVersionRanges.js"
+import {
+	ACTION_BUTTON_UPDATE_PACKAGE_JSON,
+	COMMAND_ID_ANALYZE_DEPENDENCIES,
+	DEPENDENCY_KEYS_FOR_HOVER,
+	HOVER_MARKDOWN_ANALYZE_PROJECT,
+	HOVER_SELECTOR_PACKAGE_JSON,
+	LOG_EXTENSION_ACTIVE,
+	NOTE_NO_DEPENDENCIES,
+	PROGRESS_MSG_READING_PACKAGE_JSON,
+	PROGRESS_TITLE_ANALYZE_DEPENDENCIES,
+} from "./constants.js"
+import {
+	analyzeProjectDependencies,
+	determineWorkspaceFolder,
+	updatePackageJsonEngines,
+} from "./helper.utils.js"
 
-/**
- * @typedef {object} ProjectAnalysisResult
- * @property {string} projectPackageJsonPath - The path to the project's package.json.
- * @property {string | null} minNode - The determined minimum supported Node.js version.
- * @property {string | null} maxNode - The determined maximum supported Node.js version.
- * @property {string | null} minNpm - The determined minimum supported NPM version.
- * @property {string | null} maxNpm - The determined maximum supported NPM version.
- * @property {string} [note] - An optional note, e.g., if no dependencies were found or other information.
- */
 
 /**
  * Activates the VSCode Extension
- * @param {import('vscode').ExtensionContext} context
+ * @param {import('vscode').ExtensionContext} context - The context provided by VS Code on activation.
  */
 export const activate = context => {
-	console.log('Extension "node-support-limits" is now active.')
+	console.info(LOG_EXTENSION_ACTIVE)
 
 	const analyzeCommand = commands.registerCommand(
-		"node-support-limits.analyzeDependencies",
+		COMMAND_ID_ANALYZE_DEPENDENCIES,
 		/**
-		 * Command to analyze project dependencies for Node/NPM compatibility.
+		 * Analyzes project dependencies for Node/NPM compatibility.
 		 * @param {import('vscode').Uri | undefined} uri - The URI of the folder/workspace to analyze.
 		 */
 		async uri => {
-			/** @type {import('vscode').WorkspaceFolder | undefined} */
-			let workspaceFolder
-			if (uri && uri.fsPath && statSync(uri.fsPath).isDirectory()) {
-				workspaceFolder = workspace.getWorkspaceFolder(uri)
-			} else if (
-				window?.activeTextEditor &&
-				window?.activeTextEditor.document.uri
-			) {
-				workspaceFolder = workspace.getWorkspaceFolder(
-					window?.activeTextEditor.document.uri
-				)
-			}
+			const workspaceFolder = await determineWorkspaceFolder(
+				uri,
+				window,
+				workspace
+			);
 
-			if (
-				!workspaceFolder &&
-				workspace.workspaceFolders &&
-				workspace.workspaceFolders.length > 0
-			) {
-				if (workspace.workspaceFolders.length === 1) {
-					workspaceFolder = workspace.workspaceFolders[0]
-				} else {
-					const picked = await window?.showWorkspaceFolderPick()
-					if (!picked) {
-						window?.showInformationMessage("No workspace folder selected.")
-						return
-					}
-					workspaceFolder = picked
-				}
-			}
 
+			//? If no workspace folder could be determined, show an error message
 			if (!workspaceFolder) {
 				window?.showErrorMessage(
 					"No workspace folder found. Open a project to analyze dependencies."
@@ -73,11 +54,10 @@ export const activate = context => {
 				return
 			}
 
-			const projectPath = workspaceFolder.uri.fsPath
 			window?.withProgress(
 				{
 					location: ProgressLocation.Notification,
-					title: "Analyzing Node/NPM Support Limits...",
+					title: PROGRESS_TITLE_ANALYZE_DEPENDENCIES,
 					cancellable: false,
 				},
 				/**
@@ -88,13 +68,17 @@ export const activate = context => {
 					try {
 						progress.report({
 							increment: 0,
-							message: "Reading project package.json...",
+							message: PROGRESS_MSG_READING_PACKAGE_JSON,
 						})
-						/** @type {ProjectAnalysisResult | null} */
-						const result = await analyzeProjectIncludes(projectPath, progress)
+						//? Perform the project analysis to determine Node.js and NPM version compatibility
+						/** @type {Awaited<ReturnType<typeof analyzeProjectDependencies>>} */						const result = await analyzeProjectDependencies(
+							workspaceFolder.uri.fsPath,
+							progress
+						)
+						//? If analysis was successful, proceed to display results and offer to update package.json
 
 						if (result) {
-							if (result.note === "No dependencies to analyze.") {
+							if (result.note === NOTE_NO_DEPENDENCIES) {
 								window?.showInformationMessage(
 									"No dependencies in project. Cannot determine support limits based on dependencies."
 								)
@@ -102,7 +86,7 @@ export const activate = context => {
 							}
 
 							const nodeEngineString =
-								result.minNode && result.maxNode
+								result.minNode && result.maxNode //? If both minNode and maxNode are available, construct the engine string
 									? `>=${result.minNode} <=${result.maxNode}`
 									: null
 							const npmEngineString =
@@ -111,37 +95,40 @@ export const activate = context => {
 									: null
 
 							if (!nodeEngineString) {
-								window?.showErrorMessage(
+								window?.showErrorMessage( //? If no Node.js version range could be determined, show an error message
 									"Could not determine a compatible Node.js version range for the project dependencies."
 								)
 								return
 							}
 
-							let message = `Recommended 'engines' for ${basename(projectPath)}:\nNode: "${nodeEngineString}"`
+							let message = `Recommended 'engines' for ${workspaceFolder.name}:\nNode: "${nodeEngineString}"`
 							if (npmEngineString) {
 								message += `\nNPM: "${npmEngineString}"`
 							} else {
 								message += `\nNPM: (Could not determine a specific range from dependencies; consider adding manually if needed)`
 							}
 
-							const updateAction = "Update package.json"
+							//? Offer the user the option to update the package.json with the recommended engine settings
+							const updateAction = ACTION_BUTTON_UPDATE_PACKAGE_JSON //? Define the action label for updating package.json
 							const selection = await window?.showInformationMessage(
 								message,
 								{ modal: true },
 								updateAction
 							)
-							if (selection === updateAction) {
-								await updateVersionRanges(
+							if (selection === ACTION_BUTTON_UPDATE_PACKAGE_JSON) {
+								await updatePackageJsonEngines(
 									result.projectPackageJsonPath,
 									nodeEngineString,
 									npmEngineString
 								)
 							}
+							//? Handle errors during the analysis process
 						}
 					} catch (error) {
 						console.error("Error analyzing dependencies:", error)
+						const errorMessage = error instanceof Error ? error.message : String(error)
 						window?.showErrorMessage(
-							`Error analyzing dependencies: ${JSON.parse(JSON.stringify(error))?.message ?? error}`
+							`Error analyzing dependencies: ${errorMessage}`
 						)
 					}
 				}
@@ -153,13 +140,13 @@ export const activate = context => {
 
 	//? Hover provider for package.json dependencies
 	const hoverProvider = languages.registerHoverProvider(
-		{ scheme: "file", language: "json", pattern: "**/package.json" },
+		HOVER_SELECTOR_PACKAGE_JSON,
 		{
 			/**
-			 * Displays a tooltip message "Analyze Node/NPM Support Limits for project" when the user hovers over a dependency line within a package.json file.
-			 * @param {import('vscode').TextDocument} document
-			 * @param {import('vscode').Position} position
-			 * @param {import('vscode').CancellationToken} _token
+			 * Provides a hover tooltip for package.json dependencies to trigger analysis.
+			 * @param {import('vscode').TextDocument} document - The document in which the hover was triggered.
+			 * @param {import('vscode').Position} position - The position at which the hover was triggered.
+			 * @param {import('vscode').CancellationToken} _token - A cancellation token.
 			 * @returns {import('vscode').ProviderResult<import('vscode').Hover>}
 			 */
 			provideHover(document, position, _token) {
@@ -173,21 +160,16 @@ export const activate = context => {
 					let inDepsBlock = false
 					for (let lineNum = position.line; lineNum >= 0; lineNum--) {
 						const lineText = document.lineAt(lineNum).text
-						if (
-							lineText.includes('"dependencies":') ||
-							lineText.includes('"devDependencies":') ||
-							lineText.includes('"peerDependencies":')
-						) {
+						if (DEPENDENCY_KEYS_FOR_HOVER.some(key => lineText.includes(`"${key}":`))) {
 							inDepsBlock = true
 							break
 						}
-						if (lineText.match(/^\s*{/) && lineNum !== position.line) break //* Start of a new object, not the one we are in.
+						if (lineText.match(/^\s*{/) && lineNum !== position.line) break //? Start of a new object, not the one we are in.
 					}
 
 					if (inDepsBlock) {
-						const contents = new MarkdownString(
-							`Analyze Node/NPM Support Limits for project`
-						)
+						const contents = new MarkdownString(HOVER_MARKDOWN_ANALYZE_PROJECT)
+						//? Mark the content as trusted to allow command execution from the hover tooltip
 						contents.isTrusted = true //* Allow command execution
 						return new Hover(contents, range)
 					}
