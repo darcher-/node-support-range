@@ -1,7 +1,8 @@
 {
     "recommendations": [
+        "DavidAnson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
         "ms-vscode.vscode-typescript-next",
-        "yoavbls.pretty-ts-errors",
-        "dbaeumer.vscode-eslint"
+        "yoavbls.pretty-ts-errors"
     ]
 }
