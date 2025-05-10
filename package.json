@@ -55,14 +55,14 @@
     "globals": "16.1.0",
     "prettier": "3.5.3"
   },
-  "displayName": "Node Support Limits",
+  "displayName": "Node Support Range",
   "engines": {
     "node": ">=18.20.8 <=24.0.1",
     "npm": ">=10.8.2 <=11.3.0",
     "vscode": "*"
   },
   "main": "dist/extension.js",
-  "name": "node-support-limits",
+  "name": "node-support-range",
   "optionalDependencies": {
     "npm-run-all": "4.1.5",
     "rimraf": "6.0.1"
@@ -85,7 +85,7 @@
     "lint": "npm run linter",
     "lint:check": "npm run linter --dry-run",
     "linter": "eslint src --ext=js --config=.eslintrc.js",
-    "package": "vsce package",
+    "package": "mkdir -p releases && vsce package --out releases",
     "postinstall": "npm outdated",
     "postpack": "npm find-dupes",
     "preinstall": "npm up --ignore-scripts",
