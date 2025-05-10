@@ -2,9 +2,12 @@
   "activationEvents": [
     "onLanguage:json",
     "onLanguage:jsonc",
-    "onCommand:node-support-limits.analyzeDependencies",
     "workspaceContains:package.json"
   ],
+  "bugs": {
+    "email": "dylarcher@gmail.com",
+    "url": "https://github.com/darcher-/node-support-range/issues"
+  },
   "categories": [
     "Linters",
     "Programming Languages",
@@ -15,21 +18,58 @@
       {
         "category": "NodeSupportLimits",
         "command": "node-support-limits.analyzeDependencies",
-        "title": "Analyze Node/NPM Support Limits"
+        "title": "Supported NodeJS/NPM versions range"
+      },
+      {
+        "category": "NodeSupportLimits",
+        "command": "node-support-limits.analyzeDependencies",
+        "title": "Compatible NodeJS/NPM version limits"
+      },
+      {
+        "category": "NodeSupportLimits",
+        "command": "node-support-limits.analyzeDependencies",
+        "title": "NodeJS/NPM minimum/maximum versions"
+      },
+      {
+        "category": "NodeSupportLimits",
+        "command": "node-support-limits.analyzeDependencies",
+        "title": "Dependency node/npm version constraints"
       }
     ],
     "menus": {
       "commandPalette": [
         {
           "command": "node-support-limits.analyzeDependencies",
-          "when": "resourceLangId == json || resourceLangId == jsonc"
+          "when": "resourceLangId == jsonl"
+        },
+        {
+          "command": "node-support-limits.analyzeDependencies",
+          "when": "resourceLangId == json5"
+        },
+        {
+          "command": "node-support-limits.analyzeDependencies",
+          "when": "resourceLangId == jsonc"
+        },
+        {
+          "command": "node-support-limits.analyzeDependencies",
+          "when": "resourceLangId == json"
         }
       ],
       "explorer/context": [
         {
           "command": "node-support-limits.analyzeDependencies",
           "group": "navigation@5",
-          "when": "explorerResourceIsFolder"
+          "when": "resourceFilename == package.json"
+        },
+        {
+          "command": "node-support-limits.analyzeDependencies",
+          "group": "navigation@5",
+          "when": "resourceFilename == package-lock.json"
+        },
+        {
+          "command": "node-support-limits.analyzeDependencies",
+          "group": "navigation@5",
+          "when": "resourceFilename == npm-shrinkwrap.json"
         }
       ]
     }
@@ -39,60 +79,43 @@
   },
   "description": "Analyzes project dependencies to determine and suggest NodeJS/NPM version support for the project's `package:engines` entries.",
   "devDependencies": {
-    "@eslint/js": "9.26.0",
-    "@swc/cli": "0.7.5",
-    "@swc/core": "1.11.24",
+    "@types/chai": "5.2.2",
+    "@types/mocha": "10.0.10",
     "@types/node": "22.15.17",
     "@types/semver": "7.7.0",
+    "@types/sinon": "17.0.4",
     "@types/vscode": "1.100.0",
+    "@vscode/test-electron": "2.5.2",
+    "chai": "5.2.0",
     "conventional-changelog-cli": "5.0.0",
-    "eslint": "9.26.0",
-    "eslint-config-prettier": "10.1.5",
-    "eslint-plugin-jsdoc": "50.6.11",
-    "eslint-plugin-typescript-enum": "2.1.0",
-    "eslint-plugin-unused-imports": "4.1.4",
     "glob": "11.0.2",
-    "globals": "16.1.0",
-    "prettier": "3.5.3"
+    "mocha": "11.2.2",
+    "nyc": "17.1.0",
+    "sinon": "20.0.0",
+    "vscode-test": "1.6.1"
   },
   "displayName": "Node Support Range",
   "engines": {
     "node": ">=18.20.8 <=24.0.1",
     "npm": ">=10.8.2 <=11.3.0",
-    "vscode": "*"
+    "vscode": ">=1.95.0 <=1.100.0"
   },
-  "main": "dist/extension.js",
+  "main": "src/extension.js",
   "name": "node-support-range",
-  "optionalDependencies": {
-    "npm-run-all": "4.1.5",
-    "rimraf": "6.0.1"
-  },
   "packageManager": "npm@11.3.0",
-  "peerDependencies": {
-    "@swc/core": "1.7.0",
-    "typescript": "5.8.3"
-  },
   "publisher": "darcher-",
   "repository": {
     "type": "git",
     "url": "https://github.com/darcher-/node-support-range.git"
   },
   "scripts": {
-    "compile": "tsc --project . --pretty",
-    "format": "npm run formatter --write",
-    "format:check": "npm run formatter --check",
-    "formatter": "prettier src",
-    "lint": "npm run linter",
-    "lint:check": "npm run linter --dry-run",
-    "linter": "eslint src --ext=js --config=.eslintrc.js",
-    "package": "mkdir -p releases && vsce package --out releases",
     "postinstall": "npm outdated",
     "postpack": "npm find-dupes",
     "preinstall": "npm up --ignore-scripts",
     "prepack": "npm prune --ignore-scripts",
     "prepare": "npm ci --ignore-scripts",
-    "update:changelog": "conventional-changelog",
-    "vscode:prepublish": "npm run compile"
+    "test": "node --inspect-brk test/run.js",
+    "update:changelog": "conventional-changelog"
   },
   "type": "module",
   "version": "1.0.0"
