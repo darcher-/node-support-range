@@ -37,6 +37,7 @@
   "dependencies": {
     "semver": "7.7.1"
   },
+  "license": "MIT",
   "description": "Analyzes project dependencies to determine and suggest NodeJS/NPM version support for the project's `package:engines` entries.",
   "devDependencies": {
     "@eslint/js": "9.26.0",
