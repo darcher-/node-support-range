@@ -1,0 +1,13 @@
+root = true
+
+[*.{css,html,js,json,md,svg}]
+  charset = utf-8
+  end_of_line = lf ; or auto
+  indent_size = 2
+  indent_style = tab
+  insert_final_newline = true
+  tab_width = 2
+  trim_trailing_whitespace = true
+
+[*.{png,svg,webp,avif}]
+  max_line_length = off
