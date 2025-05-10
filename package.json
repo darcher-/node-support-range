@@ -34,8 +34,6 @@
       ]
     }
   },
-  "repository": "git@github.com:darcher-/node-support-range.git",
-  "publisher": "darcher-",
   "dependencies": {
     "semver": "7.7.1"
   },
@@ -46,6 +44,7 @@
     "@swc/core": "1.11.24",
     "@types/node": "22.15.17",
     "@types/semver": "7.7.0",
+    "conventional-changelog-cli": "5.0.0",
     "@types/vscode": "1.100.0",
     "eslint": "9.26.0",
     "eslint-config-prettier": "10.1.5",
@@ -68,6 +67,10 @@
     "npm-run-all": "4.1.5",
     "rimraf": "6.0.1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/node-support-limits.git"
+  },
   "packageManager": "npm@11.3.0",
   "peerDependencies": {
     "@swc/core": "1.7.0",
@@ -78,6 +81,7 @@
     "compile": "tsc --project . --pretty",
     "format": "npm run formatter --write",
     "format:check": "npm run formatter --check",
+    "update-changelog": "conventional-changelog --infile CHANGELOG.md -s",
     "formatter": "prettier src",
     "lint": "npm run linter",
     "lint:check": "npm run linter --dry-run",
