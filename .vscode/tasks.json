@@ -1,0 +1,168 @@
+{
+    "tasks": [
+        {
+            "label": "Run All Tests",
+            "dependsOrder": "sequence",
+            "dependsOn": [ "Run Extension Tests", "Run All Standalone Tests" ],
+            "group": {
+                "isDefault": true,
+                "kind": "test"
+            },
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ]
+        },
+        {
+            "args": [
+                "test"
+            ],
+            "command": "npm",
+            "group": "test",
+            "label": "Run Extension Tests",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        },
+        {
+            "args": [
+                "run",
+                "test:extension"
+            ],
+            "command": "npm",
+            "group": "test",
+            "label": "Run Extension Structure Tests",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        },
+        {
+            "args": [
+                "run",
+                "test:constants"
+            ],
+            "command": "npm",
+            "group": "test",
+            "label": "Run Constants Tests",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        },
+        {
+            "args": [
+                "run",
+                "test:helper"
+            ],
+            "command": "npm",
+            "group": "test",
+            "label": "Run Helper Tests",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        },
+        {
+            "args": [
+                "run",
+                "test:standalone"
+            ],
+            "command": "npm",
+            "group": "test",
+            "label": "Run All Suite Tests",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        },
+        {
+            "label": "Run All Standalone Tests",
+            "command": "npm",
+            "args": [
+                "run",
+                "test:standalone:all"
+            ],
+            "group": "test",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        },
+        {
+            "label": "Run Standalone Helper Test",
+            "command": "npm",
+            "args": [
+                "run",
+                "test:standalone:helper"
+            ],
+            "group": "test",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        },
+        {
+            "label": "Run Standalone Helper Module Test",
+            "command": "npm",
+            "args": [
+                "run",
+                "test:standalone:helper:module"
+            ],
+            "group": "test",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        },
+        {
+            "label": "Run Standalone Basic Import Test",
+            "command": "npm",
+            "args": [
+                "run",
+                "test:standalone:basic"
+            ],
+            "group": "test",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        },
+        {
+            "label": "Run Standalone Constants Test",
+            "command": "npm",
+            "args": [
+                "run",
+                "test:standalone:constants"
+            ],
+            "group": "test",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always"
+            },
+            "problemMatcher": [ ],
+            "type": "shell"
+        }
+    ],
+    "version": "2.0.0"
+}

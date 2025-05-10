@@ -54,11 +54,11 @@
     "eslint.format.enable": true,
     "eslint.ignoreUntitled": true,
     "eslint.lintTask.enable": true,
-    "eslint.lintTask.options": "${workspaceFolder}/.github/configs/.eslintrc",
+    "eslint.lintTask.options": ".github/configs/.eslintrc",
     "eslint.nodeEnv": "production",
-    "eslint.nodePath": "${workspaceFolder}/node_modules/eslint",
+    "eslint.nodePath": "node_modules/eslint",
     "eslint.options": {
-        "configFile": "${workspaceFolder}/.github/configs/.eslintrc"
+        "configFile": ".github/configs/.eslintrc"
     },
     "eslint.problems.shortenToSingleLine": true,
     "eslint.run": "onSave",
@@ -66,9 +66,9 @@
         "javascript"
     ],
     "eslint.workingDirectories": [
-        "${workspaceFolder}/.github",
-        "${workspaceFolder}/.vscode",
-        "${workspaceFolder}/src"
+        ".github",
+        ".vscode",
+        "src"
     ],
     "explorer.fileNesting.enabled": true,
     "explorer.fileNesting.patterns": {
@@ -83,7 +83,7 @@
         ".*": "properties",
         ".editorconfig": "ini",
         ".eslintrc*": "yaml",
-        ".mdlintrc*": "yaml",
+        ".markdownlint-cli2*": "yaml",
         ".prettierrc*": "yaml"
     },
     "js/ts.implicitProjectConfig.checkJs": true,
@@ -92,7 +92,7 @@
     "js/ts.implicitProjectConfig.strictFunctionTypes": true,
     "js/ts.implicitProjectConfig.strictNullChecks": true,
     "js/ts.implicitProjectConfig.target": "ES2022",
-    "markdownlint.configFile": "${workspaceFolder}/.github/configs/.mdlintrc",
+    "markdownlint.configFile": ".github/configs/markdownlint.json",
     "markdownlint.lintWorkspaceGlobs": [
         "!**/*.code-search",
         "!**/.git",
@@ -105,12 +105,12 @@
         "**/*.mdx"
     ],
     "markdownlint.run": "onSave",
-    "prettier.configPath": "${workspaceFolder}/.github/configs/.prettierrc",
+    "prettier.configPath": ".github/configs/.prettierrc",
     "prettier.embeddedLanguageFormatting": "auto",
     "prettier.enable": true,
     "prettier.enableDebugLogs": false,
     "prettier.experimentalTernaries": false,
-    "prettier.prettierPath": "${workspaceFolder}/node_modules/prettier",
+    "prettier.prettierPath": "node_modules/prettier",
     "prettier.requireConfig": true,
     "prettier.resolveGlobalModules": false,
     "prettier.useEditorConfig": true,
@@ -120,5 +120,5 @@
         "**/npm-shrinkwrap.json": true,
         "**/package-lock.json": true
     },
-    "typescript.tsdk": "${workspaceFolder}/node_modules/typescript/lib"
+    "typescript.tsdk": "node_modules/typescript/lib"
 }

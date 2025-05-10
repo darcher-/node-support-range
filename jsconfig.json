@@ -11,28 +11,22 @@
         "moduleResolution": "nodenext",
         "noEmitOnError": true,
         "outDir": "dist",
-        "rootDirs": [
-            "src",
-            "test"
-        ],
+        "rootDir": "src",
         "skipLibCheck": true,
         "sourceMap": true,
         "strict": true,
         "target": "es2022",
         "types": [
             "node",
-            "sinon",
-            "mocha",
-            "chai",
             "semver",
+            "mocha",
             "vscode"
         ]
     },
     "exclude": [
         ".*",
         "dist",
-        "node_modules",
-        "test"
+        "node_modules"
     ],
     "include": [
         "src"
@@ -40,7 +34,7 @@
     "typeAcquisition": {
         "enable": true,
         "include": [
-            "node_modules/@types"
+            "node_modules/@types/**"
         ]
     }
 }

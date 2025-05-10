@@ -1,3 +1,12 @@
+/**
+ * @typedef {import('vscode').Uri} VSCodeUri
+ * @typedef {import('vscode').ExtensionContext} VSCodeExtensionContext
+ * @typedef {import('vscode').TextDocument} VSCodeTextDocument
+ * @typedef {import('vscode').Position} VSCodePosition
+ * @typedef {import('vscode').CancellationToken} VSCodeCancellationToken
+ * @typedef {import('vscode').ProviderResult<Hover>} VSCodeHoverProviderResult
+ * @typedef {import('vscode').Progress<{message?: string; increment?: number}>} VSCodeProgress
+ */
 import {
 	commands,
 	Hover,
@@ -22,12 +31,12 @@ import {
 	analyzeProjectDependencies,
 	determineWorkspaceFolder,
 	updatePackageJsonEngines,
-} from "./helper.utils.js"
+} from "./helpers.js"
 
 
 /**
  * Activates the VSCode Extension
- * @param {import('vscode').ExtensionContext} context - The context provided by VS Code on activation.
+ * @param {VSCodeExtensionContext} context - The context provided by VS Code on activation.
  */
 export const activate = context => {
 	console.info(LOG_EXTENSION_ACTIVE)
@@ -36,7 +45,7 @@ export const activate = context => {
 		COMMAND_ID_ANALYZE_DEPENDENCIES,
 		/**
 		 * Analyzes project dependencies for Node/NPM compatibility.
-		 * @param {import('vscode').Uri | undefined} uri - The URI of the folder/workspace to analyze.
+		 * @param {VSCodeUri | undefined} uri - The URI of the folder/workspace to analyze.
 		 */
 		async uri => {
 			const workspaceFolder = await determineWorkspaceFolder(
@@ -62,7 +71,7 @@ export const activate = context => {
 				},
 				/**
 				 * API that allows the extension to report progress updates (like messages and percentage increments) to a user-visible notification.
-				 * @param {import('vscode').Progress<{ message?: string; increment?: number }>} progress
+				 * @param {VSCodeProgress} progress
 				 */
 				async progress => {
 					try {
@@ -71,7 +80,8 @@ export const activate = context => {
 							message: PROGRESS_MSG_READING_PACKAGE_JSON,
 						})
 						//? Perform the project analysis to determine Node.js and NPM version compatibility
-						/** @type {Awaited<ReturnType<typeof analyzeProjectDependencies>>} */						const result = await analyzeProjectDependencies(
+						/** @type {Awaited<ReturnType<typeof analyzeProjectDependencies>>} */
+						const result = await analyzeProjectDependencies(
 							workspaceFolder.uri.fsPath,
 							progress
 						)
@@ -144,10 +154,10 @@ export const activate = context => {
 		{
 			/**
 			 * Provides a hover tooltip for package.json dependencies to trigger analysis.
-			 * @param {import('vscode').TextDocument} document - The document in which the hover was triggered.
-			 * @param {import('vscode').Position} position - The position at which the hover was triggered.
-			 * @param {import('vscode').CancellationToken} _token - A cancellation token.
-			 * @returns {import('vscode').ProviderResult<import('vscode').Hover>}
+			 * @param {VSCodeTextDocument} document - The document in which the hover was triggered.
+			 * @param {VSCodePosition} position - The position at which the hover was triggered.
+			 * @param {VSCodeCancellationToken} _token - A cancellation token.
+			 * @returns {VSCodeHoverProviderResult}
 			 */
 			provideHover(document, position, _token) {
 				console.info("Hover triggered for package.json", { position, _token }) // More informative log
@@ -179,6 +189,11 @@ export const activate = context => {
 		}
 	)
 	context.subscriptions.push(hoverProvider)
+
+	// Return an object that will be available as extension.exports
+	return {
+		context: context // Expose the context
+	}
 }
 
 export default activate

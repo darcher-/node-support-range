@@ -1,87 +1,140 @@
-# Node Support range VS Code Extension
+# Node Support Range VS Code Extension
 
-This extension helps Node.js developers by analyzing project dependencies to determine the collective supported Node.js and NPM version range. It then prompts the user to update their `package.json`'s `engines` property accordingly.
+A Visual Studio Code extension that analyzes your project's dependencies to determine the collective Node.js and NPM version range compatibility, and helps you maintain accurate `engines` specifications in your `package.json`.
+
+## Overview
+
+This extension addresses a common challenge in Node.js development: ensuring your project correctly specifies its Node.js and NPM version requirements based on the dependencies you use. It does this by examining your project's dependencies, analyzing their engine requirements, and calculating the most restrictive version range that satisfies all dependencies.
 
 ## Features
 
-- Analyzes `dependencies` and `devDependencies`.
-- Calculates the most restrictive compatible Node.js and NPM version range.
-- Offers to update your project's `package.json` with the suggested `engines`.
-- Triggers via command palette, directory context menu, or hovering over a dependency in `package.json`.
+- Analyzes `dependencies` and `devDependencies` in your package.json
+- Calculates the compatible Node.js and NPM version range across all dependencies
+- Updates your project's `engines` field with the recommended version constraints
+- Offers multiple activation methods: command palette, context menu, or dependency hover
 
-### Activation & Command
+## Usage
 
-The extension will activate and register a command (e.g. `node-support-range.analyzeDependencies`) that can be triggered from the command palette or a directory's context menu.
+Access the extension in one of three ways:
 
-### Project Discovery
+1. **Command Palette**: Run "NodeJS/NPM minimum/maximum versions" from the command palette
+2. **Explorer Context Menu**: Right-click on a package.json file and select "Supported NodeJS/NPM versions range"
+3. **Hover Interface**: Hover over a dependency in package.json to see a link to analyze dependencies
 
-Locate the [package.json](./package.json) in the active workspace.
+The extension will:
+1. Locate and analyze your project's dependencies
+2. Calculate the compatible version ranges
+3. Display the results with an option to update your package.json
 
-### Dependency Crawling
+## Technical Implementation
 
-Read dependencies and devDependencies from the project's package.json. For each dependency, read its own package.json from node_modules to find its engines.node and engines.npm requirements.
+### Core Modules
 
-### Version Range Calculation
+#### `extension.js`
 
-- Use a predefined list of known NodeJS and NPM versions.
-- Filter these lists to find versions that satisfy all collected dependency engine requirements using `semver.satisfies()`.
-- The minimum and maximum from these filtered lists will define the suggested engines range.
+Main entry point that registers:
 
-### User Prompt & Update
+- **`activate(context)`**: Initializes the extension, registers commands and hover providers
+- **`analyzeCommand`**: Command handler for the dependency analysis functionality
+- **`hoverProvider`**: Provides hover analysis trigger in package.json dependencies
 
-Display the calculated `node` & `npm` version range and offer to update the project's [package.json](./package.json) `"engines"` property.
+#### `helpers.js`
 
-### Trigger
+Contains utility functions for dependency analysis and package.json operations:
 
-> The initial version: `hover` (e.g. `onmouseover`)
+- **`updatePackageJsonEngines(packageJsonPath, nodeEngineString, npmEngineString)`**: Updates the engines field in package.json
+- **`analyzeProjectDependencies(projectPath, progress)`**: Scans dependencies and determines compatible version ranges
+- **`determineWorkspaceFolder(initialUri, vscodeWindow, vscodeWorkspace)`**: Resolves the target workspace folder for analysis
+- **`formatVersionRange(minVersion, maxVersion)`**: Formats version ranges for package.json engines field
 
-When hovering over a dependency in [package.json](./package.json), provide a link to trigger the main analysis command.
+#### `constants.js`
 
-### File Structure
+Defines constants used throughout the extension:
 
-```sh
+- **`COMMON_NODEJS_VERSIONS`**: List of Node.js versions to check compatibility against
+- **`COMMON_NPM_VERSIONS`**: List of NPM versions to check compatibility against
+- **`PACKAGE_JSON_FILENAME`**, **`NODE_MODULES_DIRNAME`**: Common file and directory names
+- Extension-specific command IDs, messages, and UI texts
+
+### Analysis Algorithm
+
+The extension performs these steps:
+
+1. **Workspace Detection**: Determines the appropriate workspace folder to analyze
+2. **Package Scanning**: Reads package.json and identifies all dependencies
+3. **Engine Requirements Collection**:
+   - For each dependency, reads its package.json from node_modules
+   - Extracts its Node.js and NPM version requirements
+4. **Compatibility Calculation**:
+   - Tests each version in COMMON_NODEJS_VERSIONS against all collected engine requirements
+   - Identifies the minimum and maximum compatible versions
+   - Does the same for NPM versions
+5. **Result Presentation**: Displays compatible ranges and offers to update package.json
+
+## Testing Framework
+
+The project uses a comprehensive two-tier testing approach:
+
+### Standalone Tests
+
+Tests that run directly in Node.js without VS Code dependencies:
+
+- **`helper-test.js`**: Tests helper functions independently
+- **`helper-module-test.js`**: Tests helper modules
+- **`basic-import-test.js`**: Verifies basic imports work correctly
+- **`constants-test.js`**: Tests constants module functionality
+
+### VS Code Extension Tests
+
+Tests that run in a VS Code context using the Extension Host:
+
+- **`basic.test.js`**: Basic tests for the extension
+- **`constants.test.js`**: Tests the constants module
+- **`extension.test.js`**: Tests the extension activation and commands
+- **`helpers.test.js`**: Tests the helper functions in a VS Code context
+- **`index.js`**: Sets up the test suite
+- **`mockHelpers.js`**: Provides mocks for VS Code APIs
+
+## CI/CD
+
+The project uses GitHub Actions for continuous integration:
+
+- **Linting & Formatting**: Automatically enforces code style through ESLint, Markdownlint, and Prettier
+- **Automated Testing**: Runs the test suite on push
+
+## Requirements
+
+- VS Code 1.100.0 or higher
+- Node.js 18.0.0 or higher
+- npm 10.8.2 or higher
+
+## Development
+
+The extension is built with an ESM structure. Key development scripts:
+
+- `npm test`: Run all extension tests
+- `npm run test:standalone`: Run all standalone tests
+- `npm run test:standalone:helper`: Run standalone helper tests
+- `npm run test:extension`: Run extension structure tests
+
+## File Structure
+
+```
 node-support-range/
-├── .vscode/
-│   └── launch.json       # For debugging the extension
-├── .gitignore
-├── package.json          # Extension manifest, dependencies, scripts
-├── tsconfig.json         # To configure JS type checking and build
-├── README.md
-└── src/
-    └── extension.js      # Main extension logic
+├── .github/                  # GitHub configurations
+│   ├── configs/              # Linter and formatter configs
+│   └── workflows/            # GitHub Actions workflows
+├── .vscode/                  # VS Code settings and tasks
+├── src/                      # Source code
+│   ├── constants.js          # Constants and version data
+│   ├── extension.js          # Extension activation and commands
+│   ├── helpers.js            # Utility functions
+│   └── test/                 # Test files
+│       ├── suite/            # VS Code extension tests
+│       └── ...               # Standalone tests
+└── package.json              # Extension manifest
 ```
 
-## Next Steps
+## Installation
 
-### Create the Directory
-
-Make a new folder named `"node-support-range"`.
-
-### Save Files
-
-Save each of the code blocks above into their respective file paths within the `node-support-range/` directory.
-
-### Install Dependencies
-
-Open a terminal in the `node-support-range/` directory and run `npm install` (or `npm i`). This will install `semver`, `typescript`, `@types/vscode`, etc.
-
-### Build
-
-Run npm run compile (or `tsc -p ./`) to "build" the JavaScript from `src/` to `dist/`.
-
-### Run & Debug
-
-1. Open the `node-support-range` folder in VS Code.
-2. Go to the "Run and Debug" view (`Cmd`/`Ctrl`+`Shift`+`D`).
-3. Select "Run Extension" from the dropdown and press `F5`.
-    - This will open a new VS Code window (the Extension Development Host) where your extension is active.
-
-### Test
-
-1. In the Extension Development Host window, open a NodeJS project that has a [package.json](./package.json) and some dependencies.
-    - ensure `node_modules/` are installed in that test project.
-2. Try the command "Analyze NodeJS/NPM Support range" from the command palette.
-3. Right-click on the project folder in the explorer and see if the command appears.
-4. Hover over a dependency in the test project's [package.json](./package.json).
-
-From here, we can refine the logic, improve error handling, make the NodeJS/NPM version lists dynamic, and enhance the hover provider's accuracy&hellip;
+Install from the VS Code Marketplace or search for "Node Support Range" within VS Code's Extensions view.

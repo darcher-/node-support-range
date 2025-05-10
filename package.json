@@ -79,31 +79,27 @@
   },
   "description": "Analyzes project dependencies to determine and suggest NodeJS/NPM version support for the project's `package:engines` entries.",
   "devDependencies": {
-    "@types/chai": "5.2.2",
+    "@types/glob": "8.1.0",
     "@types/mocha": "10.0.10",
     "@types/node": "22.15.17",
     "@types/semver": "7.7.0",
-    "@types/sinon": "17.0.4",
     "@types/vscode": "1.100.0",
     "@vscode/test-electron": "2.5.2",
-    "chai": "5.2.0",
     "conventional-changelog-cli": "5.0.0",
     "glob": "11.0.2",
     "mocha": "11.2.2",
-    "nyc": "17.1.0",
-    "sinon": "20.0.0",
     "vscode-test": "1.6.1"
   },
   "displayName": "Node Support Range",
   "engines": {
-    "node": ">=18.20.8 <=24.0.1",
+    "node": ">=18.0.0 <=24.0.1",
     "npm": ">=10.8.2 <=11.3.0",
-    "vscode": ">=1.95.0 <=1.100.0"
+    "vscode": "^1.100.0"
   },
   "main": "src/extension.js",
   "name": "node-support-range",
   "packageManager": "npm@11.3.0",
-  "publisher": "darcher-",
+  "publisher": "darcher",
   "repository": {
     "type": "git",
     "url": "https://github.com/darcher-/node-support-range.git"
@@ -114,8 +110,18 @@
     "preinstall": "npm up --ignore-scripts",
     "prepack": "npm prune --ignore-scripts",
     "prepare": "npm ci --ignore-scripts",
-    "test": "node --inspect-brk test/run.js",
-    "update:changelog": "conventional-changelog"
+    "update:changelog": "conventional-changelog",
+    "test": "node ./src/test/runTest.js",
+    "test:basic": "mocha ./src/test/suite/basic.test.js",
+    "test:helper": "mocha ./src/test/suite/helpers.test.js",
+    "test:extension": "mocha ./src/test/suite/extension.test.js",
+    "test:constants": "mocha ./src/test/suite/constants.test.js",
+    "test:standalone": "mocha ./src/test/suite/**/*.test.js",
+    "test:standalone:all": "node ./src/test/run-standalone-tests.js",
+    "test:standalone:helper": "node ./src/test/helper-test.js",
+    "test:standalone:helper:module": "node ./src/test/helper-module-test.js",
+    "test:standalone:basic": "node ./src/test/basic-import-test.js",
+    "test:standalone:constants": "node ./src/test/constants-test.js"
   },
   "type": "module",
   "version": "1.0.0"

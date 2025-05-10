@@ -1,6 +1,7 @@
-import { compare } from "semver"
-
-/** @typedef {string[]} SemVer */
+/**
+ * @typedef {string[]} SemVer
+ */
+import { compare, valid } from "semver"
 
 /** @type {boolean} */
 export const ENABLE_CONSOLE_LOGS = false
@@ -9,16 +10,19 @@ export const ENABLE_CONSOLE_LOGS = false
  * Static list of common Node.js versions to test against for compatibility.
  * Includes LTS, active, and recent versions. Sorted for reliable min/max determination.
  * @type {SemVer} - Consider fetching this dynamically or updating periodically. */
-export const COMMON_NODEJS_VERSIONS = [
+const NODEJS_VERSIONS_WITH_ALIASES = [
     "lts/hydrogen", //? 18.x
     "18.20.8", //* lts/hydrogen
     "lts/iron", //? 20.x
     "20.19.1", //* lts/iron
     "lts/jod", //? 22.x
     "22.15.0", //* lts/jod
-    "24.0.1", //* current
-].sort(compare)
+    "24.0.1", //* current // Example, ensure this is a valid current version
+]
 
+export const COMMON_NODEJS_VERSIONS = NODEJS_VERSIONS_WITH_ALIASES
+    .filter(v => valid(v)) // Keep only valid semver strings
+    .sort(compare)
 /**
  * Static list of common NPM versions to test against for compatibility.
  * Sorted for reliable min/max determination.
@@ -35,6 +39,7 @@ export const NODE_MODULES_DIRNAME = "node_modules"
 
 // Default Values
 export const DEFAULT_NODE_VERSION_RANGE = ">=0.10.0"
+export const DEFAULT_NPM_VERSION_RANGE = ">=5.0.0"
 export const DEFAULT_JSON_INDENT = 2
 export const UTF8_ENCODING = "utf8"
 

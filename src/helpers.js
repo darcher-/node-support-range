@@ -1,7 +1,15 @@
+/**
+ * @typedef {import('vscode').Uri} VSCodeUri
+ * @typedef {import('vscode').WorkspaceFolder} VSCodeWorkspaceFolder
+ * @typedef {import('vscode').TextDocument} VSCodeTextDocument
+ * @typedef {import('vscode').Progress<{message?: string; increment?: number}>} VSCodeProgress
+ * @typedef {import('vscode').WorkspaceEdit} VSCodeWorkspaceEdit
+ * @typedef {import('vscode').Range} VSCodeRange
+ */
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { satisfies } from "semver"
-import { FileType, Range, Uri, window, workspace, WorkspaceEdit } from "vscode"
+import { FileType, Range, window, workspace, WorkspaceEdit } from "vscode"
 import {
     COMMON_NODEJS_VERSIONS,
     COMMON_NPM_VERSIONS,
@@ -36,7 +44,7 @@ export const updatePackageJsonEngines = async (
     npmEngineString
 ) => {
     try {
-        /** @type {import('vscode').TextDocument} */
+        /** @type {VSCodeTextDocument} */
         const doc = await workspace.openTextDocument(packageJsonPath)
         const packageJson = JSON.parse(doc.getText())
 
@@ -108,7 +116,7 @@ export const updatePackageJsonEngines = async (
 /**
  * Analyzes the project to find the supported Node and NPM version ranges.
  * @param {string} projectPath The root path of the project.
- * @param {import('vscode').Progress<{ message?: string; increment?: number }>} progress
+ * @param {VSCodeProgress} progress
  * @returns {Promise<ProjectAnalysisResult | null>}
  */
 export const analyzeProjectDependencies = async (projectPath, progress) => {
@@ -259,13 +267,13 @@ export const analyzeProjectDependencies = async (projectPath, progress) => {
 
 /**
  * Determines the workspace folder to operate on.
- * @param {Uri | undefined} initialUri - The URI of the folder/workspace to analyze, if provided.
+ * @param {VSCodeUri | undefined} initialUri - The URI of the folder/workspace to analyze, if provided.
  * @param {typeof window} vscodeWindow - The VS Code window object.
  * @param {typeof workspace} vscodeWorkspace - The VS Code workspace object.
- * @returns {Promise<import('vscode').WorkspaceFolder | undefined>} The determined workspace folder, or undefined if none could be determined.
+ * @returns {Promise<VSCodeWorkspaceFolder | undefined>} The determined workspace folder, or undefined if none could be determined.
  */
 export const determineWorkspaceFolder = async (initialUri, vscodeWindow, vscodeWorkspace) => {
-    /** @type {import('vscode').WorkspaceFolder | undefined} */
+    /** @type {VSCodeWorkspaceFolder | undefined} */
     let folderToAnalyze
 
     if (initialUri) {
@@ -296,4 +304,31 @@ export const determineWorkspaceFolder = async (initialUri, vscodeWindow, vscodeW
         // If showWorkspaceFolderPick returns undefined (no folder picked), folderToAnalyze will be undefined.
     }
     return folderToAnalyze
+}
+
+/**
+ * Formats a version range string in the format used by package.json engines field.
+ * @param {string|null} minVersion - The minimum version to include in the range.
+ * @param {string|null} maxVersion - The maximum version to include in the range.
+ * @returns {string|null} A formatted version range string, or null if both inputs are null.
+ */
+export const formatVersionRange = (minVersion, maxVersion) => {
+    if (!minVersion && !maxVersion) {
+        return null
+    }
+
+    let range = ''
+
+    if (minVersion) {
+        range += `>=${minVersion}`
+    }
+
+    if (maxVersion) {
+        if (minVersion) {
+            range += ' '
+        }
+        range += `<=${maxVersion}`
+    }
+
+    return range
 }

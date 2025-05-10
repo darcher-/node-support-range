@@ -33,7 +33,7 @@ jobs:
 
       - name: Run Markdownlint
         run: >-
-          npx markdownlint-cli --fix --config=.github/configs/.mdlintrc **/*.md || true
+          npx markdownlint-cli --fix --config=.github/configs/markdownlint.json **/*.md || true
 
       - name: Commit markdown fixes
         run: |
