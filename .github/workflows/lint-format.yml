@@ -1,0 +1,47 @@
+---
+on: push
+name: VSCode extension source lint+format
+jobs:
+  lint_and_format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up NodeJS environment
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version-file: package.json
+
+      - name: Install extension dependencies
+        run: npm ci
+
+      - name: Configure git
+        run: >
+          git config --global user.name github-actions[bot] && git config --global user.email github-actions[bot]@users.noreply.github.com
+
+      - name: Run ESLint
+        run: npx eslint --fix . --ext=js,json --config=.github/configs/.eslintrc || true
+
+      - name: Commit javascript fixes
+        run: |
+          git add * && git diff --staged --quiet || (git commit -m chore: applies linter fixes [skip ci] && git push) || echo No linter changes to commit.
+
+      - name: Run Markdownlint
+        run: >-
+          npx markdownlint-cli --fix --config=.github/configs/.mdlintrc **/*.md || true
+
+      - name: Commit markdown fixes
+        run: |
+          git add **/*.md && git diff --staged --quiet || (git commit -m docs: applies markdown linter fixes [skip ci] && git push) || echo No markdown linter changes to commit.
+
+      - name: Run Prettier
+        run: npx prettier --write --config=.github/configs/.prettierrc **/*.{js,json,md,svg} || true
+
+      - name: Commit formatting changes
+        run: |
+          git add -A && git diff --staged --quiet || (git commit -m style: applies formatting changes [skip ci] && git push) || echo No formatter changes to commit.

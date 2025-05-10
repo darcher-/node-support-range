@@ -1,8 +1,12 @@
 {
     "recommendations": [
         "DavidAnson.vscode-markdownlint",
+        "PascalReitermann93.vscode-yaml-sort",
         "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
         "ms-vscode.vscode-typescript-next",
+        "redhat.vscode-yaml",
+        "richie5um2.vscode-sort-json",
         "yoavbls.pretty-ts-errors"
     ]
 }

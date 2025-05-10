@@ -1,8 +1,10 @@
 {
     "[javascript]": {
         "editor.codeActionsOnSave": {
-            "source.fixAll": "explicit",
             "source.addMissingImports": "explicit",
+            "source.fixAll": "explicit",
+            "source.fixAll.eslint": "explicit",
+            "source.fixAll.prettier": "explicit",
             "source.organizeImports": "always",
             "source.organizeLinkDefinitions": "explicit",
             "source.removeUnused": "explicit",
@@ -10,38 +12,113 @@
         },
         "editor.defaultFormatter": "vscode.typescript-language-features"
     },
-    "markdownlint.customRules": [
-        "MD041"
-    ],
     "[json]": {
         "editor.codeActionsOnSave": {
             "source.fixAll": "explicit",
-            "source.fixAll.sortJSON": "always"
+            "source.fixAll.sort-json": "always"
         },
         "editor.defaultFormatter": "vscode.json-language-features"
     },
-    "[jsonc]": {
+    "[markdown]": {
         "editor.codeActionsOnSave": {
             "source.fixAll": "explicit",
-            "source.fixAll.sortJSON": "always"
+            "source.fixAll.eslint": "explicit",
+            "source.fixAll.markdownlint": "explicit",
+            "source.fixAll.prettier": "explicit"
         },
-        "editor.defaultFormatter": "vscode.json-language-features"
+        "editor.defaultFormatter": "vscode.markdown-language-features"
     },
-    "editor.formatOnSave": true,
+    "[yaml]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.fixAll.prettier": "explicit",
+            "source.fixAll.yaml-sort": "explicit"
+        },
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.removeUnused": "explicit"
+    },
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "typescript.tsdk": "../node_modules/typescript/lib",
-    "eslint.enable": true,
-    "eslint.format.enable": true,
-    "eslint.codeActionsOnSave.mode": "all",
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "modificationsIfAvailable",
+    "editor.formatOnType": false,
     "eslint.codeAction.showDocumentation": {
         "enable": true
     },
-    "prettier.enable": true,
-    "prettier.configPath": "../.prettierrc.js",
-    "prettier.useEditorConfig": true,
+    "eslint.codeActionsOnSave.mode": "all",
+    "eslint.debug": false,
+    "eslint.enable": true,
+    "eslint.format.enable": true,
+    "eslint.ignoreUntitled": true,
     "eslint.lintTask.enable": true,
-    "eslint.validate": [ "javascript" ],
+    "eslint.lintTask.options": "${workspaceFolder}/.github/configs/.eslintrc",
+    "eslint.nodeEnv": "production",
+    "eslint.nodePath": "${workspaceFolder}/node_modules/eslint",
+    "eslint.options": {
+        "configFile": "${workspaceFolder}/.github/configs/.eslintrc"
+    },
+    "eslint.problems.shortenToSingleLine": true,
+    "eslint.run": "onSave",
+    "eslint.validate": [
+        "javascript"
+    ],
+    "eslint.workingDirectories": [
+        "${workspaceFolder}/.github",
+        "${workspaceFolder}/.vscode",
+        "${workspaceFolder}/src"
+    ],
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "*.js": "${capture}.{cjs,mjs}, ${capture}.util.*, ${capture}.module.css, ${capture}.js.map, ${capture}.d.ts",
+        "README.md": "*.md",
+        "jsconfig.json": "jsconfig.*.json",
+        "package.json": "package-lock.json, npm-shrinkwrap.json",
+        "tsconfig.json": "tsconfig.*.json, jsconfig.json, jsconfig.*.json"
+    },
+    "files.associations": {
+        "*.json": "json",
+        ".*": "properties",
+        ".editorconfig": "ini",
+        ".eslintrc*": "yaml",
+        ".mdlintrc*": "yaml",
+        ".prettierrc*": "yaml"
+    },
+    "js/ts.implicitProjectConfig.checkJs": true,
+    "js/ts.implicitProjectConfig.experimentalDecorators": true,
+    "js/ts.implicitProjectConfig.module": "NodeNext",
+    "js/ts.implicitProjectConfig.strictFunctionTypes": true,
+    "js/ts.implicitProjectConfig.strictNullChecks": true,
+    "js/ts.implicitProjectConfig.target": "ES2022",
+    "markdownlint.configFile": "${workspaceFolder}/.github/configs/.mdlintrc",
+    "markdownlint.lintWorkspaceGlobs": [
+        "!**/*.code-search",
+        "!**/.git",
+        "!**/bower_components",
+        "!**/dist",
+        "!**/node_modules",
+        "!**/out",
+        "!**/vendor",
+        "**/*.md",
+        "**/*.mdx"
+    ],
+    "markdownlint.run": "onSave",
+    "prettier.configPath": "${workspaceFolder}/.github/configs/.prettierrc",
+    "prettier.embeddedLanguageFormatting": "auto",
+    "prettier.enable": true,
+    "prettier.enableDebugLogs": false,
+    "prettier.experimentalTernaries": false,
+    "prettier.prettierPath": "${workspaceFolder}/node_modules/prettier",
+    "prettier.requireConfig": true,
+    "prettier.resolveGlobalModules": false,
+    "prettier.useEditorConfig": true,
+    "prettier.withNodeModules": false,
     "search.exclude": {
-        "**/node_modules": true
-    }
+        "**/node_modules": true,
+        "**/npm-shrinkwrap.json": true,
+        "**/package-lock.json": true
+    },
+    "typescript.tsdk": "${workspaceFolder}/node_modules/typescript/lib"
 }

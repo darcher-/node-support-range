@@ -1,0 +1,33 @@
+---
+- extends:
+    - markdownlint
+    - prettier
+
+- ignores:
+    - \*\*/node_modules/**/*
+    - \*\*/dist/**/*
+
+- files:
+    - \*\*/*.js
+    - \*\*/*.json
+  plugins: jsdoc
+  languageOptions:
+    ecmaVersion: 2022
+    globals:
+      es2022: true
+      node: true
+    sourceType: module
+  rules:
+    jsdoc/check-values: error
+    jsdoc/require-description: error
+    jsdoc/require-jsdoc:
+      - warn
+      - enableFixer: false
+        publicOnly: true
+        require:
+          ArrowFunctionExpression: true
+          FunctionDeclaration: true
+          MethodDefinition: true
+    no-console: "off"
+    no-undef: warn
+    no-unused-vars: warn
