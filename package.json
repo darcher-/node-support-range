@@ -111,10 +111,9 @@
   "scripts": {
     "postinstall": "npm outdated",
     "postpack": "npm find-dupes",
-    "preinstall": "npm up --ignore-scripts",
     "prepack": "npm prune --ignore-scripts",
     "prepare": "npm ci --ignore-scripts",
-    "test": "node --inspect-brk test/run.js",
+    "test": "node ./test/run.js",
     "update:changelog": "conventional-changelog"
   },
   "type": "module",

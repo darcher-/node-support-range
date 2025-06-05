@@ -10,7 +10,6 @@
         "module": "nodenext",
         "moduleResolution": "nodenext",
         "noEmitOnError": true,
-        "outDir": "dist",
         "rootDirs": [
             "src",
             "test"
@@ -31,11 +30,11 @@
     "exclude": [
         ".*",
         "dist",
-        "node_modules",
-        "test"
+        "node_modules"
     ],
     "include": [
-        "src"
+        "src",
+        "test"
     ],
     "typeAcquisition": {
         "enable": true,

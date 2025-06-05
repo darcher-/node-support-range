@@ -20,12 +20,15 @@ jobs:
       - name: Install extension dependencies
         run: npm ci
 
+      - name: Run tests
+        run: npm test
+
       - name: Configure git
         run: >
           git config --global user.name github-actions[bot] && git config --global user.email github-actions[bot]@users.noreply.github.com
 
       - name: Run ESLint
-        run: npx eslint --fix . --ext=js,json --config=.github/configs/.eslintrc || true
+        run: npx eslint --fix . --ext=js,json --config=.github/configs/.eslintrc
 
       - name: Commit javascript fixes
         run: |
@@ -33,14 +36,14 @@ jobs:
 
       - name: Run Markdownlint
         run: >-
-          npx markdownlint-cli --fix --config=.github/configs/.mdlintrc **/*.md || true
+          npx markdownlint-cli --fix --config=.github/configs/.mdlintrc **/*.md
 
       - name: Commit markdown fixes
         run: |
           git add **/*.md && git diff --staged --quiet || (git commit -m docs: applies markdown linter fixes [skip ci] && git push) || echo No markdown linter changes to commit.
 
       - name: Run Prettier
-        run: npx prettier --write --config=.github/configs/.prettierrc **/*.{js,json,md,svg} || true
+        run: npx prettier --write --config=.github/configs/.prettierrc **/*.{js,json,md,svg}
 
       - name: Commit formatting changes
         run: |

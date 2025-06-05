@@ -11,77 +11,106 @@ This extension helps Node.js developers by analyzing project dependencies to det
 
 ### Activation & Command
 
-The extension will activate and register a command (e.g. `node-support-range.analyzeDependencies`) that can be triggered from the command palette or a directory's context menu.
+The extension will activate and register a command (`node-support-limits.analyzeDependencies`) that can be triggered from the command palette or a directory's context menu.
 
 ### Project Discovery
 
-Locate the [package.json](./package.json) in the active workspace.
+Locates the `package.json` in the active workspace.
 
 ### Dependency Crawling
 
-Read dependencies and devDependencies from the project's package.json. For each dependency, read its own package.json from node_modules to find its engines.node and engines.npm requirements.
+Reads dependencies and devDependencies from the project's `package.json`. For each dependency, reads its own `package.json` from `node_modules` to find its `engines.node` and `engines.npm` requirements.
 
 ### Version Range Calculation
 
-- Use a predefined list of known NodeJS and NPM versions.
-- Filter these lists to find versions that satisfy all collected dependency engine requirements using `semver.satisfies()`.
+- Uses a predefined list of known NodeJS and NPM versions.
+- Filters these lists to find versions that satisfy all collected dependency engine requirements using `semver.satisfies()`.
 - The minimum and maximum from these filtered lists will define the suggested engines range.
 
 ### User Prompt & Update
 
-Display the calculated `node` & `npm` version range and offer to update the project's [package.json](./package.json) `"engines"` property.
+Displays the calculated `node` & `npm` version range and offers to update the project's `package.json` `"engines"` property.
 
-### Trigger
+### Trigger (Hover Provider)
 
-> The initial version: `hover` (e.g. `onmouseover`)
+When hovering over a dependency in `package.json`, provides a link to trigger the main analysis command.
 
-When hovering over a dependency in [package.json](./package.json), provide a link to trigger the main analysis command.
+## File Structure
 
-### File Structure
+The project's file structure:
 
 ```sh
 node-support-range/
+├── .github/            # GitHub Actions workflows and configs
 ├── .vscode/
-│   └── launch.json       # For debugging the extension
+│   └── launch.json     # For debugging the extension
+├── src/
+│   ├── constants.js    # Project constants
+│   ├── extension.js    # Main extension logic
+│   └── helper.utils.js # Helper functions
+├── test/
+│   ├── run.js          # Test runner script for @vscode/test-electron
+│   ├── sample_project/ # Sample project for integration tests
+│   └── suite/          # Test suites (unit, integration)
+│       ├── extension.test.js
+│       ├── helper.utils.test.js
+│       └── index.js      # Mocha test suite entry point
+├── .eslintignore
+├── .eslintrc.js        # ESLint configuration (or similar, e.g. in .github/configs)
 ├── .gitignore
-├── package.json          # Extension manifest, dependencies, scripts
-├── tsconfig.json         # To configure JS type checking and build
-├── README.md
-└── src/
-    └── extension.js      # Main extension logic
+├── .prettierignore
+├── .prettierrc.yaml    # Prettier configuration (or similar, e.g. in .github/configs)
+├── CHANGELOG.md
+├── jsconfig.json       # JavaScript language service configuration
+├── package-lock.json
+├── package.json        # Extension manifest, dependencies, scripts
+└── README.md
+```
+*(Note: Paths to ESLint/Prettier configs might vary, e.g., they could be in `.github/configs/` as used by CI.)*
+
+## Testing
+
+This extension uses Mocha for testing, run via `@vscode/test-electron` to simulate the VS Code environment. Tests include both unit tests for helper utilities and integration tests for extension commands and features.
+
+To run all tests:
+
+```bash
+npm test
 ```
 
-## Next Steps
+## Development Workflow
 
-### Create the Directory
+This project uses ESLint for JavaScript linting and Prettier for code formatting. These are enforced by a GitHub Actions workflow (`.github/workflows/lint-format.yml`) that runs on every push, performing tests, linting, and formatting checks.
 
-Make a new folder named `"node-support-range"`.
+### Local Development Steps
 
-### Save Files
+1.  **Install dependencies:**
+    ```bash
+    npm ci
+    ```
+    (`npm ci` is recommended for clean installs, especially in CI environments, but `npm install` can also be used for local development.)
 
-Save each of the code blocks above into their respective file paths within the `node-support-range/` directory.
+2.  **Run tests:**
+    Ensure all tests pass before committing changes.
+    ```bash
+    npm test
+    ```
 
-### Install Dependencies
+3.  **Lint and Format (Optional but Recommended):**
+    While the CI workflow will catch linting and formatting issues, running these locally can speed up the development cycle. The exact commands depend on your project's script setup or direct npx calls. Example direct calls:
+    ```bash
+    # Run ESLint to check for and fix linting issues (config path may vary)
+    npx eslint . --fix --ext=js,json --config=.github/configs/.eslintrc
 
-Open a terminal in the `node-support-range/` directory and run `npm install` (or `npm i`). This will install `semver`, `typescript`, `@types/vscode`, etc.
+    # Run Prettier to format code (config path may vary)
+    npx prettier . --write --config=.github/configs/.prettierrc
+    ```
+    Refer to `package.json` scripts or the GitHub Actions workflow for the precise commands used by the project if available as npm scripts.
 
-### Build
+4.  **Debugging the Extension:**
+    *   Open the `node-support-range` project folder in VS Code.
+    *   Go to the "Run and Debug" view (Cmd/Ctrl+Shift+D).
+    *   Select "Run Extension" from the dropdown and press F5.
+        *   This will open a new VS Code window (the Extension Development Host) where your extension is active and can be tested manually.
 
-Run npm run compile (or `tsc -p ./`) to "build" the JavaScript from `src/` to `dist/`.
-
-### Run & Debug
-
-1. Open the `node-support-range` folder in VS Code.
-2. Go to the "Run and Debug" view (`Cmd`/`Ctrl`+`Shift`+`D`).
-3. Select "Run Extension" from the dropdown and press `F5`.
-    - This will open a new VS Code window (the Extension Development Host) where your extension is active.
-
-### Test
-
-1. In the Extension Development Host window, open a NodeJS project that has a [package.json](./package.json) and some dependencies.
-    - ensure `node_modules/` are installed in that test project.
-2. Try the command "Analyze NodeJS/NPM Support range" from the command palette.
-3. Right-click on the project folder in the explorer and see if the command appears.
-4. Hover over a dependency in the test project's [package.json](./package.json).
-
-From here, we can refine the logic, improve error handling, make the NodeJS/NPM version lists dynamic, and enhance the hover provider's accuracy&hellip;
+By following these steps, you can contribute to the project while maintaining code quality and consistency.
