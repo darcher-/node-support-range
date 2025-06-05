@@ -10,13 +10,10 @@ export const ENABLE_CONSOLE_LOGS = false
  * Includes LTS, active, and recent versions. Sorted for reliable min/max determination.
  * @type {SemVer} - Consider fetching this dynamically or updating periodically. */
 export const COMMON_NODEJS_VERSIONS = [
-    "lts/hydrogen", //? 18.x
-    "18.20.8", //* lts/hydrogen
-    "lts/iron", //? 20.x
-    "20.19.1", //* lts/iron
-    "lts/jod", //? 22.x
-    "22.15.0", //* lts/jod
-    "24.0.1", //* current
+    "18.20.8",
+    "20.19.1",
+    "22.15.0",
+    "24.0.1",
 ].sort(compare)
 
 /**
