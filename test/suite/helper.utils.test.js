@@ -225,7 +225,6 @@ suite('Helper Utils Test Suite', () => {
 
       // To actually check the content, we'd need to see what arguments `mockWorkspaceEdit.insert` or `mockWorkspaceEdit.replace` got.
       // This means `vscode.WorkspaceEdit` needs to be stubbed to return our `mockWorkspaceEdit`.
-      sandbox.stub(vscode, 'WorkspaceEdit').returns(mockWorkspaceEdit);
 
       await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, null, mockProgress); // Call again with the stub active
 
