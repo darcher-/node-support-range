@@ -215,7 +215,7 @@ export const analyzeProjectDependencies = async (
     let minNode = null,
         maxNode = null
     if (allNodeRanges.length > 0) {
-        const compatibleNodeVersions = knownNodeVersions.filter(version =>
+        const compatibleNodeVersions = injectedKnownNodeVersions.filter(version =>
             allNodeRanges.every(rangeStr => {
                 try {
                     return satisfies(version, rangeStr, { includePrerelease: false }) //? Check if the Node.js version satisfies the given range
