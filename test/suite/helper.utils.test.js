@@ -83,12 +83,6 @@ suite('Helper Utils Test Suite', () => {
     sandbox.restore();
   });
 
-  // Removed 'Initial Sample Test (to be removed or replaced)'
-  // test('Initial Sample Test (to be removed or replaced)', () => {
-  //   // This test was from the initial setup, can be removed once real tests are added.
-  //   assert.strictEqual(1, 1, 'Sample assertion');
-  // });
-
   suite('analyzeProjectDependencies', () => {
     test('should return NOTE_NO_DEPENDENCIES if package has no dependencies', async () => {
       const projectPath = 'project';
