@@ -5,7 +5,14 @@ const vscode = require('vscode'); // Will be mocked
 
 // Assuming helper.utils.js is in src and constants.js is in src
 const { analyzeProjectDependencies, updatePackageJsonEngines } = require('../../src/helper.utils');
-const { NOTE_NO_DEPENDENCIES, COMMON_NODEJS_VERSIONS, DEFAULT_NODE_VERSION_RANGE, DEFAULT_NPM_VERSION_RANGE } = require('../../src/constants');
+const {
+  NOTE_NO_DEPENDENCIES,
+  COMMON_NODEJS_VERSIONS,
+  DEFAULT_NODE_VERSION_RANGE,
+  DEFAULT_NPM_VERSION_RANGE,
+  PACKAGE_JSON_FILENAME,
+  DEFAULT_JSON_INDENT
+} = require('../../src/constants');
 
 suite('Helper Utils Test Suite', () => {
   let sandbox;
@@ -38,6 +45,7 @@ suite('Helper Utils Test Suite', () => {
     sandbox.stub(vscode.workspace, 'openTextDocument').resolves(mockTextDocument);
     sandbox.stub(vscode.workspace, 'applyEdit').resolves(true);
     sandbox.stub(vscode.workspace, 'saveAll').resolves(true);
+    sandbox.stub(vscode, 'WorkspaceEdit').returns(mockWorkspaceEdit); // Ensure mockWorkspaceEdit is returned
 
     // Mock vscode.Progress
     mockProgress = { report: sinon.spy(), token: { isCancellationRequested: false, onCancellationRequested: sinon.stub() } };
@@ -75,11 +83,6 @@ suite('Helper Utils Test Suite', () => {
     sandbox.restore();
   });
 
-  test('Initial Sample Test (to be removed or replaced)', () => {
-    // This test was from the initial setup, can be removed once real tests are added.
-    assert.strictEqual(1, 1, 'Sample assertion');
-  });
-
   suite('analyzeProjectDependencies', () => {
     test('should return NOTE_NO_DEPENDENCIES if package has no dependencies', async () => {
       const projectPath = 'project';
@@ -91,11 +94,10 @@ suite('Helper Utils Test Suite', () => {
 
       assert.deepStrictEqual(result, {
         projectPackageJsonPath: packageJsonPath,
-        minNode: DEFAULT_NODE_VERSION_RANGE.minVersion, // Based on DEFAULT_NODE_VERSION_RANGE
-        maxNode: DEFAULT_NODE_VERSION_RANGE.maxVersion, // Based on DEFAULT_NODE_VERSION_RANGE
-        minNpm: DEFAULT_NPM_VERSION_RANGE.minVersion,
-        maxNpm: DEFAULT_NPM_VERSION_RANGE.maxVersion,
-        dependencies: {},
+        minNode: null,
+        maxNode: null,
+        minNpm: null,
+        maxNpm: null,
         note: NOTE_NO_DEPENDENCIES,
       });
       assert(mockProgress.report.called, 'Progress should be reported');
@@ -150,8 +152,10 @@ suite('Helper Utils Test Suite', () => {
       const expectedMax = semver.maxSatisfying(relevantNodeVersions, '<20.0.0');
 
       assert.strictEqual(result.maxNode, expectedMax, 'Max node version mismatch');
-      assert.ok(result.dependencies['dep1'].node, 'dep1 node range should be recorded');
-      assert.strictEqual(result.dependencies['dep1'].node.range, '>=18.0.0 <20.0.0');
+      // The dependencies field is no longer returned, so these assertions are removed.
+      // assert.ok(result.dependencies['dep1'].node, 'dep1 node range should be recorded');
+      // assert.strictEqual(result.dependencies['dep1'].node.range, '>=18.0.0 <20.0.0');
+      assert(mockProgress.report.called, 'Progress should be reported');
     });
 
     test('should handle dependency missing package.json by using default range', async () => {
@@ -168,11 +172,26 @@ suite('Helper Utils Test Suite', () => {
 
       const result = await analyzeProjectDependencies(projectPath, mockProgress);
 
-      assert.ok(result.dependencies['dep_missing'], 'Dependency should be listed');
-      assert.strictEqual(result.dependencies['dep_missing'].node.range, DEFAULT_NODE_VERSION_RANGE.range, 'Node range should be default');
-      assert.strictEqual(result.dependencies['dep_missing'].npm.range, DEFAULT_NPM_VERSION_RANGE.range, 'Npm range should be default');
-      assert.strictEqual(result.minNode, DEFAULT_NODE_VERSION_RANGE.minVersion);
-      assert.strictEqual(result.maxNode, DEFAULT_NODE_VERSION_RANGE.maxVersion);
+      // The dependencies field is no longer returned, so these assertions are removed.
+      // assert.ok(result.dependencies['dep_missing'], 'Dependency should be listed');
+      // assert.strictEqual(result.dependencies['dep_missing'].node.range, DEFAULT_NODE_VERSION_RANGE.range, 'Node range should be default');
+      // assert.strictEqual(result.dependencies['dep_missing'].npm.range, DEFAULT_NPM_VERSION_RANGE.range, 'Npm range should be default');
+
+      // Since DEFAULT_NODE_VERSION_RANGE ('>=0.10.0') includes all COMMON_NODEJS_VERSIONS
+      assert.strictEqual(result.minNode, COMMON_NODEJS_VERSIONS[0], 'Min node should be the earliest common version');
+      assert.strictEqual(result.maxNode, COMMON_NODEJS_VERSIONS[COMMON_NODEJS_VERSIONS.length - 1], 'Max node should be the latest common version');
+
+      // NPM versions are not constrained by this dependency, so they should be null if no other deps constrain them.
+      // Or, if we assume DEFAULT_NPM_VERSION_RANGE is also applied, it would be similar to node.
+      // Based on current logic, if allNpmRanges is empty, minNpm/maxNpm will be null.
+      // If dep_missing pushes DEFAULT_NPM_VERSION_RANGE, then it would be full range of COMMON_NPM_VERSIONS.
+      // The current code pushes DEFAULT_NODE_VERSION_RANGE for node, but doesn't explicitly push a default for npm. Let's verify this.
+      // On review of `analyzeProjectDependencies`: if `depPackageJson.engines.npm` is missing, nothing is pushed to `allNpmRanges`.
+      // If `allNpmRanges` remains empty, `minNpm` and `maxNpm` will be `null`.
+      assert.strictEqual(result.minNpm, null, 'Min NPM should be null as no NPM engine specified');
+      assert.strictEqual(result.maxNpm, null, 'Max NPM should be null as no NPM engine specified');
+      assert(mockProgress.report.called, 'Progress should be reported');
+      assert(console.warn.calledWithMatch(/package.json not found for dep_missing/i), 'Warning for missing package.json should be logged');
     });
 
     test('should handle unparsable dependency package.json by using default range and warning', async () => {
@@ -190,11 +209,65 @@ suite('Helper Utils Test Suite', () => {
 
       const result = await analyzeProjectDependencies(projectPath, mockProgress);
 
-      assert(console.warn.calledWithMatch(/Failed to parse package.json for dep_bad/), 'Warning for unparsable package.json should be logged');
-      assert.ok(result.dependencies['dep_bad'], 'Dependency should be listed');
-      assert.strictEqual(result.dependencies['dep_bad'].node.range, DEFAULT_NODE_VERSION_RANGE.range, 'Node range should be default after error');
-      assert.strictEqual(result.minNode, DEFAULT_NODE_VERSION_RANGE.minVersion);
-      assert.strictEqual(result.maxNode, DEFAULT_NODE_VERSION_RANGE.maxVersion);
+      assert(console.warn.calledWithMatch(/Could not parse package.json for dependency dep_bad/i), 'Warning for unparsable package.json should be logged');
+      // The dependencies field is no longer returned
+      // assert.ok(result.dependencies['dep_bad'], 'Dependency should be listed');
+      // assert.strictEqual(result.dependencies['dep_bad'].node.range, DEFAULT_NODE_VERSION_RANGE.range, 'Node range should be default after error');
+
+      // Since DEFAULT_NODE_VERSION_RANGE ('>=0.10.0') includes all COMMON_NODEJS_VERSIONS
+      assert.strictEqual(result.minNode, COMMON_NODEJS_VERSIONS[0], 'Min node should be the earliest common version');
+      assert.strictEqual(result.maxNode, COMMON_NODEJS_VERSIONS[COMMON_NODEJS_VERSIONS.length - 1], 'Max node should be the latest common version');
+
+      // NPM versions are not constrained by this dependency as its package.json is unparsable.
+      assert.strictEqual(result.minNpm, null, 'Min NPM should be null as no NPM engine specified');
+      assert.strictEqual(result.maxNpm, null, 'Max NPM should be null as no NPM engine specified');
+      assert(mockProgress.report.called, 'Progress should be reported');
+    });
+
+    test('should return null for versions if no common compatible version is found', async () => {
+      const projectPath = 'project_no_overlap';
+      const packageJsonPath = `${projectPath}/package.json`;
+      const dep1PackageJsonPath = `${projectPath}/node_modules/dep1/package.json`;
+      const dep2PackageJsonPath = `${projectPath}/node_modules/dep2/package.json`;
+
+      fs.existsSync.withArgs(packageJsonPath).returns(true);
+      fs.readFileSync.withArgs(packageJsonPath, 'utf8').returns(JSON.stringify({
+        name: 'test-project-no-overlap',
+        dependencies: {
+          'dep1': '^1.0.0',
+          'dep2': '^1.0.0'
+        }
+      }));
+
+      fs.existsSync.withArgs(dep1PackageJsonPath).returns(true);
+      fs.readFileSync.withArgs(dep1PackageJsonPath, 'utf8').returns(JSON.stringify({
+        name: 'dep1',
+        version: '1.0.0',
+        engines: {
+          node: '>=18.0.0 <19.0.0', // Node 18.x
+          npm: '>=8.0.0 <9.0.0'    // NPM 8.x
+        }
+      }));
+
+      fs.existsSync.withArgs(dep2PackageJsonPath).returns(true);
+      fs.readFileSync.withArgs(dep2PackageJsonPath, 'utf8').returns(JSON.stringify({
+        name: 'dep2',
+        version: '1.0.0',
+        engines: {
+          node: '>=20.0.0 <21.0.0', // Node 20.x
+          npm: '>=10.0.0 <11.0.0'   // NPM 10.x
+        }
+      }));
+
+      // We use the default COMMON_NODEJS_VERSIONS and COMMON_NPM_VERSIONS here
+      // as the test ensures no overlap within these common versions.
+      const result = await analyzeProjectDependencies(projectPath, mockProgress);
+
+      assert.strictEqual(result.minNode, null, 'Min node should be null due to no overlap');
+      assert.strictEqual(result.maxNode, null, 'Max node should be null due to no overlap');
+      assert.strictEqual(result.minNpm, null, 'Min NPM should be null due to no overlap');
+      assert.strictEqual(result.maxNpm, null, 'Max NPM should be null due to no overlap');
+      assert(mockProgress.report.called, 'Progress should be reported');
     });
 
   });
@@ -224,18 +297,60 @@ suite('Helper Utils Test Suite', () => {
       // This will require a deeper mock of the edit application process.
 
       // To actually check the content, we'd need to see what arguments `mockWorkspaceEdit.insert` or `mockWorkspaceEdit.replace` got.
-      // This means `vscode.WorkspaceEdit` needs to be stubbed to return our `mockWorkspaceEdit`.
+      // The function should use replace for the whole document content
+      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, null);
 
-      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, null, mockProgress); // Call again with the stub active
+      assert(mockWorkspaceEdit.replace.calledOnce, "WorkspaceEdit's replace should have been called once");
+      assert.isFalse(mockWorkspaceEdit.insert.called, "WorkspaceEdit's insert should not have been called");
 
-      assert(mockWorkspaceEdit.insert.called || mockWorkspaceEdit.replace.called, "WorkspaceEdit's insert or replace should be called");
-      // Example check if insert was called (most likely for new field)
-      if (mockWorkspaceEdit.insert.called) {
-        const [uri, position, text] = mockWorkspaceEdit.insert.getCall(0).args;
-        assert.deepStrictEqual(uri.fsPath, projectPackageJsonPath);
-        assert.ok(text.includes('"engines": {\n    "node": ">=18.0.0"\n  }'));
-      }
-      assert(vscode.window.showInformationMessage.calledWithMatch('Successfully updated package.json engines'), "Success message should be shown");
+      const [uri, range, newText] = mockWorkspaceEdit.replace.getCall(0).args;
+      assert.deepStrictEqual(uri, mockTextDocument.uri, "URI for replace should match document URI");
+      // Range should cover the entire document, which is implicitly tested by replacing the whole content.
+
+      const updatedPackageJson = JSON.parse(newText);
+      assert.ok(updatedPackageJson.engines, "Engines property should exist");
+      assert.strictEqual(updatedPackageJson.engines.node, nodeEngineString, "Node engine string is incorrect");
+      assert.strictEqual(updatedPackageJson.name, "test-project", "Original properties should be preserved");
+
+      // Verify indentation (initial content used indent 2, DEFAULT_JSON_INDENT is 2)
+      // This regex checks if the 'engines' line is indented with 2 spaces.
+      assert.ok(newText.includes(`\n  "engines": {`), "Indentation of engines block seems incorrect.");
+      assert.ok(newText.includes(`\n    "node": "${nodeEngineString}"`), "Indentation of node property seems incorrect.");
+
+
+      assert(vscode.window.showInformationMessage.calledWithMatch(`${PACKAGE_JSON_FILENAME} has been updated`), "Success message should be shown");
+    });
+
+    test('should not remove existing npm engine if npmEngineString is null', async () => {
+      const initialNodeVersion = '>=16.0.0';
+      const initialNpmVersion = '>=7.0.0';
+      const initialContent = JSON.stringify({
+        name: 'test-project-keep-npm',
+        engines: {
+          node: initialNodeVersion,
+          npm: initialNpmVersion
+        }
+      }, null, 2);
+      mockTextDocument.getText.returns(initialContent);
+
+      const newNodeEngineString = '>=18.0.0'; // New node version
+      await updatePackageJsonEngines(projectPackageJsonPath, newNodeEngineString, null); // npmEngineString is null
+
+      assert(mockWorkspaceEdit.replace.calledOnce, "WorkspaceEdit's replace should have been called once");
+      const [, , newText] = mockWorkspaceEdit.replace.getCall(0).args;
+      const updatedPackageJson = JSON.parse(newText);
+
+      assert.ok(updatedPackageJson.engines, "Engines property should exist");
+      assert.strictEqual(updatedPackageJson.engines.node, newNodeEngineString, "Node engine string should be updated");
+      assert.strictEqual(updatedPackageJson.engines.npm, initialNpmVersion, "NPM engine should remain unchanged");
+      assert.strictEqual(updatedPackageJson.name, "test-project-keep-npm", "Original properties should be preserved");
+
+      // Verify indentation
+      assert.ok(newText.includes(`\n  "engines": {`), "Indentation of engines block seems incorrect.");
+      assert.ok(newText.includes(`\n    "node": "${newNodeEngineString}"`), "Indentation of node property seems incorrect.");
+      assert.ok(newText.includes(`\n    "npm": "${initialNpmVersion}"`), "Indentation of npm property seems incorrect.");
+
+      assert(vscode.window.showInformationMessage.calledWithMatch(`${PACKAGE_JSON_FILENAME} has been updated`), "Success message should be shown");
     });
 
     test('should update existing engines node', async () => {
@@ -251,53 +366,149 @@ suite('Helper Utils Test Suite', () => {
       // For the sake of this example, we'll focus on applyEdit being called with the right intent.
 
       const newNodeEngineString = '>=20.0.0';
-      sandbox.stub(vscode, 'WorkspaceEdit').returns(mockWorkspaceEdit); // Ensure our mock edit is used
+      // sandbox.stub(vscode, 'WorkspaceEdit').returns(mockWorkspaceEdit); // Already stubbed in setup
 
-      await updatePackageJsonEngines(projectPackageJsonPath, newNodeEngineString, null, mockProgress);
+      await updatePackageJsonEngines(projectPackageJsonPath, newNodeEngineString, null);
 
-      assert(mockWorkspaceEdit.replace.calledOnce, "WorkspaceEdit's replace should be called");
-      if (mockWorkspaceEdit.replace.called) {
-        const [uri, range, text] = mockWorkspaceEdit.replace.getCall(0).args;
-        assert.deepStrictEqual(uri.fsPath, projectPackageJsonPath);
-        assert.ok(text.includes(`"node": "${newNodeEngineString}"`)); // Check if the new string is part of the replacement
-        assert.ok(!text.includes('>=16.0.0')); // Old string should not be there if simple replacement
-      }
-      assert(vscode.window.showInformationMessage.calledWithMatch('Successfully updated package.json engines'));
+      assert(mockWorkspaceEdit.replace.calledOnce, "WorkspaceEdit's replace should be called once");
+      const [uri, range, newText] = mockWorkspaceEdit.replace.getCall(0).args;
+
+      assert.deepStrictEqual(uri, mockTextDocument.uri);
+      const updatedPackageJson = JSON.parse(newText);
+
+      assert.deepStrictEqual(updatedPackageJson.name, "test-project", "Original 'name' property should be preserved.");
+      assert.ok(updatedPackageJson.engines, "Engines property should exist.");
+      assert.strictEqual(updatedPackageJson.engines.node, newNodeEngineString, "Node engine string was not updated.");
+      assert.ok(!updatedPackageJson.engines.npm, "NPM engine should not be present if not specified and not existing.");
+
+      // Verify indentation (initial content used indent 2)
+      assert.ok(newText.includes(`\n  "engines": {`), "Indentation of engines block seems incorrect.");
+      assert.ok(newText.includes(`\n    "node": "${newNodeEngineString}"`), "Indentation of node property seems incorrect.");
+
+      assert(vscode.window.showInformationMessage.calledWithMatch(`${PACKAGE_JSON_FILENAME} has been updated`), "Success message should be shown");
     });
 
     test('should not update if engines are the same', async () => {
       const nodeEngineString = '>=18.0.0';
       const initialContent = JSON.stringify({ name: 'test-project', engines: { node: nodeEngineString } }, null, 2);
       mockTextDocument.getText.returns(initialContent);
-      sandbox.stub(vscode, 'WorkspaceEdit').returns(mockWorkspaceEdit);
+      // sandbox.stub(vscode, 'WorkspaceEdit').returns(mockWorkspaceEdit); // Already stubbed in setup
 
-      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, null, mockProgress);
+      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, null);
 
       assert.isFalse(mockWorkspaceEdit.replace.called, "WorkspaceEdit's replace should not be called");
       assert.isFalse(mockWorkspaceEdit.insert.called, "WorkspaceEdit's insert should not be called");
-      assert(vscode.window.showInformationMessage.calledWithMatch('Engines are already up-to-date.'), "Info message for no change should be shown");
+      assert(vscode.window.showInformationMessage.calledWithMatch(`${PACKAGE_JSON_FILENAME} 'engines' are already up-to-date.`), "Info message for no change should be shown");
     });
 
     test('should add npm engine alongside node engine', async () => {
-      const initialContent = JSON.stringify({ name: 'test-project' }, null, 2);
+      const initialContent = JSON.stringify({ name: 'test-project', version: "1.0.0" }, null, 2);
       mockTextDocument.getText.returns(initialContent);
-      sandbox.stub(vscode, 'WorkspaceEdit').returns(mockWorkspaceEdit);
+      // sandbox.stub(vscode, 'WorkspaceEdit').returns(mockWorkspaceEdit); // Already stubbed in setup
 
       const nodeEngineString = '>=18.0.0';
       const npmEngineString = '>=9.0.0';
-      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, npmEngineString, mockProgress);
+      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, npmEngineString);
 
-      assert(mockWorkspaceEdit.insert.called || mockWorkspaceEdit.replace.called, "WorkspaceEdit's insert or replace should be called");
-      if (mockWorkspaceEdit.insert.called) { // Assuming insertion for a new engines block
-        const [, , text] = mockWorkspaceEdit.insert.getCall(0).args;
-        assert.ok(text.includes(`"node": "${nodeEngineString}"`));
-        assert.ok(text.includes(`"npm": "${npmEngineString}"`));
-      } else if (mockWorkspaceEdit.replace.called) { // Or replacement if it adds to an empty object or similar
-         const [, , text] = mockWorkspaceEdit.replace.getCall(0).args;
-        assert.ok(text.includes(`"node": "${nodeEngineString}"`));
-        assert.ok(text.includes(`"npm": "${npmEngineString}"`));
-      }
-      assert(vscode.window.showInformationMessage.calledWithMatch('Successfully updated package.json engines'));
+      assert(mockWorkspaceEdit.replace.calledOnce, "WorkspaceEdit's replace should have been called once");
+      assert.isFalse(mockWorkspaceEdit.insert.called, "WorkspaceEdit's insert should not have been called");
+
+      const [uri, range, newText] = mockWorkspaceEdit.replace.getCall(0).args;
+      assert.deepStrictEqual(uri, mockTextDocument.uri);
+
+      const updatedPackageJson = JSON.parse(newText);
+      assert.strictEqual(updatedPackageJson.name, "test-project", "Original 'name' property should be preserved.");
+      assert.strictEqual(updatedPackageJson.version, "1.0.0", "Original 'version' property should be preserved.");
+      assert.ok(updatedPackageJson.engines, "Engines property should exist");
+      assert.strictEqual(updatedPackageJson.engines.node, nodeEngineString, "Node engine string is incorrect");
+      assert.strictEqual(updatedPackageJson.engines.npm, npmEngineString, "NPM engine string is incorrect");
+
+      // Verify indentation (initial content used indent 2)
+      assert.ok(newText.includes(`\n  "engines": {`), "Indentation of engines block seems incorrect.");
+      assert.ok(newText.includes(`\n    "node": "${nodeEngineString}"`), "Indentation of node property seems incorrect.");
+      assert.ok(newText.includes(`\n    "npm": "${npmEngineString}"`), "Indentation of npm property seems incorrect.");
+
+      assert(vscode.window.showInformationMessage.calledWithMatch(`${PACKAGE_JSON_FILENAME} has been updated`), "Success message should be shown");
+    });
+
+    test('should only add node engine if npmEngineString is null and npm engine does not exist', async () => {
+      const initialContent = JSON.stringify({ name: 'test-project-only-node' }, null, 2);
+      mockTextDocument.getText.returns(initialContent);
+
+      const nodeEngineString = '>=18.0.0';
+      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, null);
+
+      assert(mockWorkspaceEdit.replace.calledOnce, "WorkspaceEdit's replace should have been called once");
+      const [, , newText] = mockWorkspaceEdit.replace.getCall(0).args;
+      const updatedPackageJson = JSON.parse(newText);
+
+      assert.ok(updatedPackageJson.engines, "Engines property should exist");
+      assert.strictEqual(updatedPackageJson.engines.node, nodeEngineString, "Node engine string is incorrect");
+      assert.strictEqual(updatedPackageJson.engines.npm, undefined, "NPM engine should not be present");
+      assert.strictEqual(updatedPackageJson.name, "test-project-only-node", "Original properties should be preserved");
+      assert(vscode.window.showInformationMessage.calledWithMatch(`${PACKAGE_JSON_FILENAME} has been updated`), "Success message should be shown");
+    });
+
+    test('should use detected 4-space indentation', async () => {
+      const initialContent = JSON.stringify({ name: 'test-project-4spaces' }, null, 4);
+      mockTextDocument.getText.returns(initialContent); // getText will provide this content with 4 spaces
+
+      const nodeEngineString = '>=18.0.0';
+      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, null);
+
+      assert(mockWorkspaceEdit.replace.calledOnce, "Replace not called or called too many times");
+      const [, , newText] = mockWorkspaceEdit.replace.getCall(0).args;
+      const updatedPackageJson = JSON.parse(newText);
+
+      assert.ok(updatedPackageJson.engines.node, "Node engine not added");
+      assert.strictEqual(updatedPackageJson.name, "test-project-4spaces", "Name property altered");
+
+      // Check for 4-space indentation in the output
+      assert.ok(newText.includes(`\n    "engines": {`), "Indentation of engines block is not 4 spaces.");
+      assert.ok(newText.includes(`\n        "node": "${nodeEngineString}"`), "Indentation of node property is not 4 spaces (nested).");
+      assert(vscode.window.showInformationMessage.calledWithMatch(`${PACKAGE_JSON_FILENAME} has been updated`), "Success message should be shown");
+    });
+
+    test('should use detected tab indentation', async () => {
+      const initialContent = JSON.stringify({ name: 'test-project-tabs' }, null, '\t');
+      mockTextDocument.getText.returns(initialContent); // getText will provide this content with tabs
+
+      const nodeEngineString = '>=18.0.0';
+      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, null);
+
+      assert(mockWorkspaceEdit.replace.calledOnce, "Replace not called or called too many times");
+      const [, , newText] = mockWorkspaceEdit.replace.getCall(0).args;
+      const updatedPackageJson = JSON.parse(newText);
+
+      assert.ok(updatedPackageJson.engines.node, "Node engine not added");
+      assert.strictEqual(updatedPackageJson.name, "test-project-tabs", "Name property altered");
+
+      // Check for tab indentation in the output
+      assert.ok(newText.includes(`\n\t"engines": {`), "Indentation of engines block is not tab.");
+      assert.ok(newText.includes(`\n\t\t"node": "${nodeEngineString}"`), "Indentation of node property is not tab (nested).");
+      assert(vscode.window.showInformationMessage.calledWithMatch(`${PACKAGE_JSON_FILENAME} has been updated`), "Success message should be shown");
+    });
+
+    test('should use default indentation if none detected', async () => {
+      // Simulate no detectable indentation (e.g. first line doesn't have quotes or it's all one line)
+      const initialContent = '{ "name": "test-project-no-indent" }';
+      mockTextDocument.getText.returns(initialContent);
+
+      const nodeEngineString = '>=18.0.0';
+      await updatePackageJsonEngines(projectPackageJsonPath, nodeEngineString, null);
+
+      assert(mockWorkspaceEdit.replace.calledOnce, "Replace not called or called too many times");
+      const [, , newText] = mockWorkspaceEdit.replace.getCall(0).args;
+      const updatedPackageJson = JSON.parse(newText);
+
+      assert.ok(updatedPackageJson.engines.node, "Node engine not added");
+      assert.strictEqual(updatedPackageJson.name, "test-project-no-indent", "Name property altered");
+
+      // Check for default indentation (assuming DEFAULT_JSON_INDENT is 2 spaces)
+      const expectedIndent = ' '.repeat(DEFAULT_JSON_INDENT);
+      assert.ok(newText.includes(`\n${expectedIndent}"engines": {`), `Engines block not using default indent of ${DEFAULT_JSON_INDENT} spaces.`);
+      assert.ok(newText.includes(`\n${expectedIndent}${expectedIndent}"node": "${nodeEngineString}"`), `Node property not using default indent of ${DEFAULT_JSON_INDENT} spaces (nested).`);
+      assert(vscode.window.showInformationMessage.calledWithMatch(`${PACKAGE_JSON_FILENAME} has been updated`), "Success message should be shown");
     });
 
   });

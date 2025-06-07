@@ -139,21 +139,19 @@ export const activate = context => {
 	context.subscriptions.push(analyzeCommand)
 
 	//? Hover provider for package.json dependencies
-	const hoverProvider = languages.registerHoverProvider(
-		HOVER_SELECTOR_PACKAGE_JSON,
-		{
-			/**
-			 * Provides a hover tooltip for package.json dependencies to trigger analysis.
-			 * @param {import('vscode').TextDocument} document - The document in which the hover was triggered.
-			 * @param {import('vscode').Position} position - The position at which the hover was triggered.
-			 * @param {import('vscode').CancellationToken} _token - A cancellation token.
-			 * @returns {import('vscode').ProviderResult<import('vscode').Hover>}
-			 */
-			provideHover(document, position, _token) {
-				console.info("Hover triggered for package.json", { position, _token }) // More informative log
-				const range = document.getWordRangeAtPosition(
-					position,
-					/"([^"]+)":\s*"([^"]+)"/
+	const packageJsonHoverProvider = {
+		/**
+		 * Provides a hover tooltip for package.json dependencies to trigger analysis.
+		 * @param {import('vscode').TextDocument} document - The document in which the hover was triggered.
+		 * @param {import('vscode').Position} position - The position at which the hover was triggered.
+		 * @param {import('vscode').CancellationToken} _token - A cancellation token.
+		 * @returns {import('vscode').ProviderResult<import('vscode').Hover>}
+		 */
+		provideHover(document, position, _token) {
+			console.info("Hover triggered for package.json", { position, _token }) // More informative log
+			const range = document.getWordRangeAtPosition(
+				position,
+				/"([^"]+)":\s*"([^"]+)"/
 				)
 				if (range) {
 					//? Basic check: is the hover within a dependencies/devDependencies block? A full JSON AST parse would be more robust.
@@ -176,9 +174,15 @@ export const activate = context => {
 				}
 				return null
 			},
-		}
+	}
+	const hoverProviderDisposable = languages.registerHoverProvider(
+		HOVER_SELECTOR_PACKAGE_JSON,
+		packageJsonHoverProvider
 	)
-	context.subscriptions.push(hoverProvider)
+	context.subscriptions.push(hoverProviderDisposable)
 }
 
 export default activate
+
+// Export for testing purposes
+export const { provideHover } = packageJsonHoverProvider;
