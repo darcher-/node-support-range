@@ -9,7 +9,8 @@ const fs = require('fs'); // For creating temp workspace for one test
 // We might need to import 'activate' from '../../src/extension.js' if we want to spy on its internals
 // before it runs, e.g., for vscode.languages.registerHoverProvider.
 // For now, assume activation happens automatically or test post-activation state.
-// const { activate } = require('../../src/extension'); // Assuming 'activate' is exported
+const { provideHover } = require('../../src/extension'); // Import the exported function
+const { HOVER_MARKDOWN_ANALYZE_PROJECT, COMMAND_ID_ANALYZE_DEPENDENCIES, DEPENDENCY_KEYS_FOR_HOVER } = require('../../src/constants');
 
 suite('Extension Test Suite', () => {
   let sandbox;
@@ -95,6 +96,67 @@ suite('Extension Test Suite', () => {
       assert(vscode.window.showErrorMessage.notCalled, 'showErrorMessage should not have been called');
     });
 
+    test('Analyze Dependencies Command - no URI, uses active editors workspace', async () => {
+      assert.ok(workspaceRootPath, 'Workspace root path for sample_project must be defined');
+      const packageJsonPath = path.join(workspaceRootPath, 'package.json');
+      const packageJsonUri = vscode.Uri.file(packageJsonPath);
+
+      const document = await vscode.workspace.openTextDocument(packageJsonPath);
+      const editor = await vscode.window.showTextDocument(document);
+
+      sandbox.stub(vscode.window, 'activeTextEditor').value(editor);
+
+      const sampleWorkspaceFolder = vscode.workspace.workspaceFolders.find(f => f.name === 'sample_project');
+      assert.ok(sampleWorkspaceFolder, "Could not find 'sample_project' workspace folder");
+      sandbox.stub(vscode.workspace, 'getWorkspaceFolder').withArgs(packageJsonUri).returns(sampleWorkspaceFolder);
+
+      await vscode.commands.executeCommand('node-support-limits.analyzeDependencies'); // No URI
+
+      assert(vscode.window.withProgress.calledOnce, 'vscode.window.withProgress should have been called');
+      assert(
+        vscode.window.showInformationMessage.calledWith(sinon.match(/Recommended 'engines' for sample-test-project/)),
+        `showInformationMessage spy was called with: ${vscode.window.showInformationMessage.getCall(0)?.args[0]}`
+      );
+      assert(vscode.window.showErrorMessage.notCalled, 'showErrorMessage should not have been called');
+    });
+
+    test('Analyze Dependencies Command - no URI, no active editor, user picks folder', async () => {
+      sandbox.stub(vscode.window, 'activeTextEditor').value(undefined); // No active editor
+
+      const sampleWorkspaceFolder = vscode.workspace.workspaceFolders.find(f => f.name === 'sample_project');
+      assert.ok(sampleWorkspaceFolder, "Could not find 'sample_project' workspace folder for test setup");
+
+      // Ensure workspaceFolders is defined and contains our sample project
+      sandbox.stub(vscode.workspace, 'workspaceFolders').value([sampleWorkspaceFolder]);
+      sandbox.stub(vscode.window, 'showWorkspaceFolderPick').resolves(sampleWorkspaceFolder);
+
+      await vscode.commands.executeCommand('node-support-limits.analyzeDependencies'); // No URI
+
+      assert(vscode.window.withProgress.calledOnce, 'vscode.window.withProgress should have been called');
+      assert(vscode.window.showWorkspaceFolderPick.calledOnce, 'showWorkspaceFolderPick should have been called');
+      assert(
+        vscode.window.showInformationMessage.calledWith(sinon.match(/Recommended 'engines' for sample-test-project/)),
+        `showInformationMessage spy was called with: ${vscode.window.showInformationMessage.getCall(0)?.args[0]}`
+      );
+      assert(vscode.window.showErrorMessage.notCalled, 'showErrorMessage should not have been called');
+    });
+
+    test('Analyze Dependencies Command - no workspace available', async () => {
+      sandbox.stub(vscode.window, 'activeTextEditor').value(undefined); // No active editor
+      sandbox.stub(vscode.workspace, 'workspaceFolders').value([]); // No workspace folders
+      sandbox.stub(vscode.window, 'showWorkspaceFolderPick').resolves(undefined); // User cancels pick
+
+      await vscode.commands.executeCommand('node-support-limits.analyzeDependencies'); // No URI
+
+      assert(vscode.window.showErrorMessage.calledOnce, 'showErrorMessage should have been called once');
+      assert(
+        vscode.window.showErrorMessage.calledWith(sinon.match("No workspace folder found. Open a project to analyze dependencies.")),
+        `showErrorMessage spy was called with: ${vscode.window.showErrorMessage.getCall(0)?.args[0]}`
+      );
+      assert(vscode.window.showInformationMessage.notCalled, 'showInformationMessage should not have been called');
+      assert(vscode.window.withProgress.notCalled, 'withProgress should not have been called');
+    });
+
     test('Analyze Dependencies Command - Project without package.json', async () => {
       assert.ok(generalWorkspacePath, 'General workspace path must be defined');
       // Ensure this directory is empty and does not contain a package.json
@@ -155,6 +217,93 @@ suite('Extension Test Suite', () => {
     // 4. Asserting the content of the returned Hover object.
     // This is closer to a unit test for the `provideHover` method itself, but with real VSCode objects.
     // For this integration test suite, confirming registration is a key first step.
+
+    test('Hover provider should return correct hover content', async () => {
+      assert.ok(workspaceRootPath, 'Workspace root path for sample_project must be defined');
+      const packageJsonPath = path.join(workspaceRootPath, 'package.json');
+      assert.ok(fs.existsSync(packageJsonPath), 'sample_project/package.json should exist');
+
+      const document = await vscode.workspace.openTextDocument(packageJsonPath);
+
+      // Find a line with a dependency, e.g., "semver": "^7.0.0"
+      let depLine = -1;
+      let depCharStart = -1;
+      let depCharEnd = -1;
+      const depName = "semver"; // Example dependency
+
+      for (let i = 0; i < document.lineCount; i++) {
+        const line = document.lineAt(i);
+        const depIndex = line.text.indexOf(`"${depName}"`);
+        if (depIndex !== -1) {
+          depLine = i;
+          // Simulate a range for the dependency key "semver"
+          depCharStart = depIndex; // Start of the word "semver"
+          depCharEnd = depIndex + depName.length + 2; // End of the word "semver" including quotes
+          break;
+        }
+      }
+      assert.notStrictEqual(depLine, -1, `Dependency "${depName}" not found in sample_project/package.json`);
+
+      const position = new vscode.Position(depLine, depCharStart + 1); // Position within "semver"
+      const expectedRange = new vscode.Range(new vscode.Position(depLine, depCharStart), new vscode.Position(depLine, depCharEnd));
+
+      // Mock getWordRangeAtPosition for the specific document instance
+      // and also lineAt to control the "inDepsBlock" logic
+      sandbox.stub(document, 'getWordRangeAtPosition').returns(expectedRange);
+      const originalLineAt = document.lineAt;
+      sandbox.stub(document, 'lineAt').callsFake(lineNumber => {
+        const actualLine = originalLineAt.call(document, lineNumber);
+        if (lineNumber === position.line) {
+          // Return the actual line content. The `inDepsBlock` check in `provideHover`
+          // will then correctly use this along with the lines above.
+          return actualLine;
+        }
+        // For lines above, to ensure the DEPENDENCY_KEYS_FOR_HOVER is found by provideHover
+        if (lineNumber < position.line && lineNumber >=0) {
+           const lineText = actualLine.text;
+           // If this line contains "dependencies": or "devDependencies": etc. allow it
+           if (DEPENDENCY_KEYS_FOR_HOVER.some(key => lineText.includes(`"${key}":`))) {
+             return actualLine;
+           }
+           // If it's just a generic line or start of an object, return that.
+           // This simplified mock ensures that some relevant "dependency key" line is found by the provideHover logic.
+           if (lineText.match(/^\s*{/) && lineNumber !== position.line) { // Start of a new object
+             return { text: "{", line: lineNumber, isEmptyOrWhitespace: false, firstNonWhitespaceCharacterIndex: 0 };
+           }
+           // Return a simplified line if it's not crucial for the "inDepsBlock" logic for this specific test.
+           // Or, more robustly, always return `actualLine` and ensure sample_project/package.json structure is stable.
+           // For this test, the crucial part is that one of the lines iterated by provideHover contains a relevant key.
+           // The `provideHover` itself iterates upwards. We need to ensure one of those iterations finds a relevant key.
+           // The sample_project/package.json has "dependencies": block.
+           // So, returning actualLine should be fine as long as depName is within such a block.
+           return actualLine;
+        }
+        return actualLine;
+      });
+
+
+      const mockToken = { isCancellationRequested: false, onCancellationRequested: sinon.stub() };
+
+      const hoverResult = await provideHover(document, position, mockToken);
+
+      assert.ok(hoverResult instanceof vscode.Hover, 'Hover result should be an instance of vscode.Hover');
+      assert.strictEqual(hoverResult.contents.length, 1, 'Hover contents should have one MarkdownString');
+
+      const markdownContent = hoverResult.contents[0];
+      assert.ok(markdownContent instanceof vscode.MarkdownString, 'Content should be MarkdownString');
+
+      // Check for the specific markdown which includes a command
+      const expectedMarkdownPattern = HOVER_MARKDOWN_ANALYZE_PROJECT.replace('[', '\\[').replace(']', '\\]').replace(/\(([^)]+)\)/, (match, commandPart) => {
+        // Escape markdown, then make command part a regex capture if needed
+        // For "command:..." syntax, it's `(command:${COMMAND_ID_ANALYZE_DEPENDENCIES})`
+        return `\\(command:${COMMAND_ID_ANALYZE_DEPENDENCIES}\\)`;
+      });
+
+      assert.ok(markdownContent.value.includes(HOVER_MARKDOWN_ANALYZE_PROJECT), `Markdown content did not match. Expected to include: "${HOVER_MARKDOWN_ANALYZE_PROJECT}", Got: "${markdownContent.value}"`);
+      assert.ok(markdownContent.value.includes(COMMAND_ID_ANALYZE_DEPENDENCIES), `Markdown should contain command ID ${COMMAND_ID_ANALYZE_DEPENDENCIES}`);
+      assert.strictEqual(markdownContent.isTrusted, true, 'MarkdownString should be trusted to allow command execution');
+      assert.deepStrictEqual(hoverResult.range, expectedRange, 'Hover range should match the expected range');
+    });
   });
 
   suiteTeardown(() => {

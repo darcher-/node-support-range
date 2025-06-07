@@ -22,6 +22,8 @@ import {
  * @property {string | null} maxNpm - The determined maximum supported NPM version.
  * @property {string} [note] - An optional note, e.g., if no dependencies were found or other information.
  */
+// The `dependencies` field was part of an earlier design and is no longer returned by `analyzeProjectDependencies`.
+// It has been removed from this typedef.
 
 /**
  * Updates the project's package.json with the new engines.
@@ -109,9 +111,16 @@ export const updatePackageJsonEngines = async (
  * Analyzes the project to find the supported Node and NPM version ranges.
  * @param {string} projectPath The root path of the project.
  * @param {import('vscode').Progress<{ message?: string; increment?: number }>} progress
+ * @param {string[]} [knownNodeVersions=COMMON_NODEJS_VERSIONS] - Optional. Known Node.js versions to check against. Defaults to COMMON_NODEJS_VERSIONS.
+ * @param {string[]} [knownNpmVersions=COMMON_NPM_VERSIONS] - Optional. Known NPM versions to check against. Defaults to COMMON_NPM_VERSIONS.
  * @returns {Promise<ProjectAnalysisResult | null>}
  */
-export const analyzeProjectDependencies = async (projectPath, progress) => {
+export const analyzeProjectDependencies = async (
+    projectPath,
+    progress,
+    knownNodeVersions = COMMON_NODEJS_VERSIONS,
+    knownNpmVersions = COMMON_NPM_VERSIONS
+) => {
     /** @type {string|URL} */
     const projectPackageJsonPath = join(projectPath, PACKAGE_JSON_FILENAME)
     if (!existsSync(projectPackageJsonPath)) {
@@ -206,7 +215,7 @@ export const analyzeProjectDependencies = async (projectPath, progress) => {
     let minNode = null,
         maxNode = null
     if (allNodeRanges.length > 0) {
-        const compatibleNodeVersions = COMMON_NODEJS_VERSIONS.filter(version =>
+        const compatibleNodeVersions = knownNodeVersions.filter(version =>
             allNodeRanges.every(rangeStr => {
                 try {
                     return satisfies(version, rangeStr, { includePrerelease: false }) //? Check if the Node.js version satisfies the given range
@@ -225,15 +234,15 @@ export const analyzeProjectDependencies = async (projectPath, progress) => {
         }
     } else if (Object.keys(dependencies).length > 0) {
         //* Has dependencies, but none specified engines
-        minNode = COMMON_NODEJS_VERSIONS[0] //* Default to oldest known if deps exist but don't constrain
-        maxNode = COMMON_NODEJS_VERSIONS[COMMON_NODEJS_VERSIONS.length - 1]
+        minNode = knownNodeVersions[0] //* Default to oldest known if deps exist but don't constrain
+        maxNode = knownNodeVersions[knownNodeVersions.length - 1]
     } //? If no compatible versions are found, the range remains null
 
     //? Calculate NPM range
     let minNpm = null,
         maxNpm = null
     if (allNpmRanges.length > 0) {
-        const compatibleNpmVersions = COMMON_NPM_VERSIONS.filter(version =>
+        const compatibleNpmVersions = knownNpmVersions.filter(version =>
             allNpmRanges.every(rangeStr => {
                 try {
                     return satisfies(version, rangeStr, { includePrerelease: false }) //? Check if the NPM version satisfies the given range
